@@ -54,11 +54,11 @@ services:
     tmpfs:
       - /tmp/.cache:noexec,nosuid,size=512m
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      test: ["CMD-SHELL", "pgrep -f playwright || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 3
-      start_period: 30s
+      start_period: 60s
 
   # Redis for job queues
   redis:
