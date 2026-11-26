@@ -1,0 +1,31 @@
+# Traefik-ready Firecrawl deployment wrapper
+# This image is not meant to be run directly - it's for Portainer stack imports
+# The actual services are defined in docker-compose.yml (Portainer-compatible format)
+
+FROM alpine:3.19
+
+LABEL maintainer="bsahbi"
+LABEL description="Firecrawl Standalone - Traefik-ready deployment for Portainer"
+
+# Install curl for healthchecks
+RUN apk --no-cache add curl
+
+# Copy healthcheck script
+RUN mkdir -p /app && \
+    echo '#!/bin/sh' > /app/healthcheck.sh && \
+    echo 'curl -sf http://localhost:3002/health || exit 1' >> /app/healthcheck.sh && \
+    chmod +x /app/healthcheck.sh
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD /app/healthcheck.sh
+
+EXPOSE 3002
+
+# This image is a placeholder - actual deployment uses docker-compose.yml with:
+# - firecrawl/firecrawl:latest (API)
+# - mcr.microsoft.com/playwright:v1.50.1-jammy (Browser)
+# - redis:7-alpine (Queue)
+# - rabbitmq:3-management (Queue)
+# - postgres:16-alpine (Database)
+
+CMD ["/bin/sh", "-c", "echo 'Import docker-compose.yml into Portainer to deploy'"]

@@ -1,0 +1,100 @@
+services:
+  # Firecrawl API Gateway
+  firecrawl-api:
+    image: firecrawl/firecrawl:latest
+    container_name: firecrawl-api
+    restart: unless-stopped
+    environment:
+      - BULL_AUTH_KEY=${BULL_AUTH_KEY}
+      - NUM_WORKERS_PER_QUEUE=5
+      - CRAWL_CONCURRENT_REQUESTS=5
+      - API_PORT=3002
+      - REDIS_URL=redis://redis:6379
+      - PLAYWRIGHT_MICROSERVICE_URL=http://playwright:3000/scrape
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=postgres
+    networks:
+      - firecrawl-net
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.firecrawl.rule=Host(`firecrawl.yourdomain.com`)
+      - traefik.http.routers.firecrawl.entrypoints=websecure
+      - traefik.http.routers.firecrawl.tls.certresolver=letsencrypt
+      - traefik.http.services.firecrawl.loadbalancer.server.port=3002
+    depends_on:
+      redis:
+        condition: service_healthy
+      playwright:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  # Playwright browser service
+  playwright:
+    image: mcr.microsoft.com/playwright:v1.50.1-jammy
+    container_name: firecrawl-playwright
+    restart: unless-stopped
+    environment:
+      - PORT=3000
+      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+    networks:
+      - firecrawl-net
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.playwright.rule=Host(`playwright.yourdomain.com`)
+      - traefik.http.routers.playwright.entrypoints=websecure
+      - traefik.http.routers.playwright.tls.certresolver=letsencrypt
+      - traefik.http.services.playwright.loadbalancer.server.port=3000
+    volumes:
+      - playwright-cache:/ms-playwright
+    tmpfs:
+      - /tmp/.cache:noexec,nosuid,size=512m
+
+  # Redis for job queues
+  redis:
+    image: redis:7-alpine
+    container_name: firecrawl-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    networks:
+      - firecrawl-net
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+  # PostgreSQL for NuQ queue backend
+  postgres:
+    image: postgres:16-alpine
+    container_name: firecrawl-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    networks:
+      - firecrawl-net
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  redis-data:
+  postgres-data:
+  playwright-cache:
+
+networks:
+  firecrawl-net:
+    driver: bridge
