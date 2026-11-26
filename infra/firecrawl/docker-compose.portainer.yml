@@ -33,14 +33,17 @@ services:
       postgres:
         condition: service_healthy
 
-  # Playwright browser service
+  # Playwright service for browser automation
   playwright:
-    image: mcr.microsoft.com/playwright:v1.50.1-jammy
+    image: ghcr.io/firecrawl/playwright-service:latest
     container_name: firecrawl-playwright
     restart: unless-stopped
     environment:
       - PORT=3000
-      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
+      - PROXY_SERVER=${PROXY_SERVER}
+      - PROXY_USERNAME=${PROXY_USERNAME}
+      - PROXY_PASSWORD=${PROXY_PASSWORD}
+      - MAX_CONCURRENT_PAGES=10
     networks:
       - firecrawl-net
     labels:
@@ -49,10 +52,8 @@ services:
       - traefik.http.routers.playwright.entrypoints=websecure
       - traefik.http.routers.playwright.tls.certresolver=letsencrypt
       - traefik.http.services.playwright.loadbalancer.server.port=3000
-    volumes:
-      - playwright-cache:/ms-playwright
     tmpfs:
-      - /tmp/.cache:noexec,nosuid,size=512m
+      - /tmp/.cache:noexec,nosuid,size=1g
 
   # Redis for job queues
   redis:
