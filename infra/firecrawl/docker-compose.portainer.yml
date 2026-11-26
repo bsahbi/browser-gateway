@@ -1,7 +1,7 @@
 services:
   # Firecrawl API Gateway
   firecrawl-api:
-    image: firecrawl/firecrawl:latest
+    image: ghcr.io/firecrawl/firecrawl:latest
     container_name: firecrawl-api
     restart: unless-stopped
     environment:
