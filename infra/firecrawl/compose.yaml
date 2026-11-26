@@ -1,0 +1,230 @@
+# Workplane Browser Gateway - P0 Firecrawl Standalone
+# Secure, independently deployable Docker Compose stack
+# Version: 1.0.0 | Pin: firecrawl v2.11.162
+
+name: workplane-firecrawl-p0
+
+x-common-service: &common-service
+  restart: unless-stopped
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+      compress: "true"
+  networks:
+    - backend
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+x-common-env: &common-env
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+  REDIS_RATE_LIMIT_URL: ${REDIS_RATE_LIMIT_URL:-${REDIS_URL:-redis://redis:6379}}
+  PLAYWRIGHT_MICROSERVICE_URL: ${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright-service:3000/scrape}
+  POSTGRES_USER: ${POSTGRES_USER:-postgres}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_DB: ${POSTGRES_DB:-postgres}
+  POSTGRES_HOST: ${POSTGRES_HOST:-nuq-postgres}
+  POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+  NUM_WORKERS_PER_QUEUE: ${NUM_WORKERS_PER_QUEUE:-4}
+  CRAWL_CONCURRENT_REQUESTS: ${CRAWL_CONCURRENT_REQUESTS:-5}
+  MAX_CONCURRENT_JOBS: ${MAX_CONCURRENT_JOBS:-3}
+  BROWSER_POOL_SIZE: ${BROWSER_POOL_SIZE:-3}
+  BULL_AUTH_KEY: ${BULL_AUTH_KEY}
+  USE_DB_AUTHENTICATION: ${USE_DB_AUTHENTICATION:-false}
+  LOGGING_LEVEL: ${LOGGING_LEVEL:-info}
+  HOST: "0.0.0.0"
+  INTERNAL_PORT: ${INTERNAL_PORT:-3002}
+  WORKER_PORT: ${WORKER_PORT:-3005}
+  HARNESS_STARTUP_TIMEOUT_MS: ${HARNESS_STARTUP_TIMEOUT_MS:-60000}
+  ENV: production
+
+services:
+  # API Gateway - Main entry point
+  api:
+    <<: *common-service
+    image: ghcr.io/firecrawl/firecrawl:${FIRECRAWL_VERSION:-v2.11.162}
+    environment:
+      <<: *common-env
+      NUQ_RABBITMQ_URL: amqp://rabbitmq:5672
+    depends_on:
+      redis:
+        condition: service_started
+      playwright-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      nuq-postgres:
+        condition: service_healthy
+        required: false
+    ports:
+      - "${API_PORT:-3002}:3002"
+    volumes:
+      - fdb-cluster-file:/var/fdb:ro
+    # Resource limits for Docker Compose
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 2G
+    security_opt:
+      - no-new-privileges:true
+    # Health check
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3002/health/readiness || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  # Playwright browser service for JavaScript rendering
+  playwright-service:
+    image: mcr.microsoft.com/playwright:v1.50.1-jammy
+    environment:
+      PORT: 3000
+      PROXY_SERVER: ${PROXY_SERVER}
+      PROXY_USERNAME: ${PROXY_USERNAME}
+      PROXY_PASSWORD: ${PROXY_PASSWORD}
+      ALLOW_LOCAL_WEBHOOKS: ${ALLOW_LOCAL_WEBHOOKS:-false}
+      BLOCK_MEDIA: ${BLOCK_MEDIA:-false}
+      MAX_CONCURRENT_PAGES: ${CRAWL_CONCURRENT_REQUESTS:-5}
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    networks:
+      - backend
+    security_opt:
+      - no-new-privileges:true
+      - apparmor=default
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 1G
+    tmpfs:
+      - /tmp/.cache:noexec,nosuid,size=512m
+    volumes:
+      - playwright-cache:/ms-playwright
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+
+  # Redis for caching and rate limiting
+  redis:
+    image: redis:7-alpine
+    networks:
+      - backend
+    command: redis-server --bind 0.0.0.0 --maxmemory all --maxmemory-policy volatile-lru
+    security_opt:
+      - no-new-privileges:true
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    volumes:
+      - redis-data:/data
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+        compress: "true"
+
+  # RabbitMQ for job queue
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    networks:
+      - backend
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-firecrawl}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    command: rabbitmq-server
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+        compress: "true"
+
+  # PostgreSQL for NuQ queue backend (standard PostgreSQL)
+  nuq-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - backend
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+        compress: "true"
+
+networks:
+  backend:
+    driver: bridge
+    internal: false
+
+volumes:
+  redis-data:
+  rabbitmq-data:
+  postgres-data:
+  fdb-cluster-file:
+  playwright-cache:

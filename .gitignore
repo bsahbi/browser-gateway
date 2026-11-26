@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Docker
+.docker/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Cache
+.cache/
+.npm/
+.nvm/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
