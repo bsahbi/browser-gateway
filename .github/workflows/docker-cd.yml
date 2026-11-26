@@ -57,10 +57,10 @@ jobs:
 
           case "$TARGET" in
             main) 
-              IMAGE_TAG="latest"
+              IMAGE_TAG="release"  # main → release tag
               ;;
             release) 
-              IMAGE_TAG="release"
+              IMAGE_TAG="latest"   # release → latest tag
               ;;
             *)
               echo "Unsupported target: $TARGET" >&2
