@@ -19,23 +19,17 @@ POSTGRES_PASSWORD=$(openssl rand -hex 32)
 2. Select **Web Editor**
 3. Copy contents of `docker-compose.portainer.yml`
 4. Set environment variables:
-   - `BULL_AUTH_KEY` - Random 32+ character string (use `openssl rand -hex 32`)
-   - `POSTGRES_PASSWORD` - Random 32+ character string
+   - `BULL_AUTH_KEY` - generated with `openssl rand -hex 32`
+   - `POSTGRES_PASSWORD` - generated with `openssl rand -hex 32`
+   - `DOMAIN_NAME` - e.g. `firecrawl.example.com`
 5. Deploy
 
-### 2. Configure Traefik
+## Access Points
 
-Update the Traefik labels in `docker-compose.portainer.yml` with your domain:
+Replace `${DOMAIN_NAME}` with your actual domain:
 
-```yaml
-labels:
-  - traefik.http.routers.firecrawl.rule=Host(`firecrawl.yourdomain.com`)
-```
-
-### 3. Access Points
-
-- **Firecrawl API**: `https://firecrawl.yourdomain.com`
-- **Playwright**: `https://playwright.yourdomain.com`
+- **Firecrawl API**: `https://${DOMAIN_NAME}`
+- **Playwright**: `https://${DOMAIN_NAME}`
 
 ## Environment Variables
 
@@ -58,7 +52,7 @@ labels:
 All services include health checks. Verify deployment:
 
 ```bash
-curl -k https://firecrawl.yourdomain.com/health
+curl -k https://${DOMAIN_NAME}/health
 ```
 
 ## Updates
