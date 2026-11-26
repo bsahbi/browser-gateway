@@ -2,17 +2,16 @@ name: Firecrawl Docker CD
 
 on:
   push:
-    branches: [main, release]
+    branches: [release]
   workflow_dispatch:
     inputs:
-      deploy_to:
-        description: 'Image tag to publish'
+      tag:
+        description: 'Image tag'
         required: true
-        default: 'main'
+        default: 'latest'
         type: choice
         options:
-          - main
-          - release
+          - latest
 
 permissions:
   contents: read
@@ -24,11 +23,11 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/firecrawl
+  IMAGE_NAME: ghcr.io/${{ github.repository }}/firecrawl
 
 jobs:
   build-and-push:
-    name: Build and push Traefik wrapper (${{ github.ref_name }})
+    name: Build and push Firecrawl (${{ github.ref_name }})
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -44,57 +43,12 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Determine image tag
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
-            TARGET="${{ inputs.deploy_to }}"
-          else
-            TARGET="${GITHUB_REF_NAME}"
-          fi
-
-          case "$TARGET" in
-            main) 
-              IMAGE_TAG="release"  # main → release tag
-              ;;
-            release) 
-              IMAGE_TAG="latest"   # release → latest tag
-              ;;
-            *)
-              echo "Unsupported target: $TARGET" >&2
-              exit 1
-              ;;
-          esac
-
-          # GHCR image names must be lowercase
-          # Format: ghcr.io/owner/repo/name
-          FULL_IMAGE_NAME="ghcr.io/${GITHUB_REPOSITORY,,}/firecrawl"
-
-          echo "IMAGE_TAG=${IMAGE_TAG}" >> "$GITHUB_ENV"
-          echo "FULL_IMAGE_NAME=${FULL_IMAGE_NAME}"
-
-      - name: Build and push Traefik wrapper
+      - name: Build and push
         uses: docker/build-push-action@v5
         with:
           context: .
           file: infra/firecrawl/Dockerfile.firecrawl
           push: true
-          tags: |
-            ${{ env.FULL_IMAGE_NAME }}:${{ env.IMAGE_TAG }}
-            ${{ env.FULL_IMAGE_NAME }}:${{ github.sha }}
+          tags: ${{ env.IMAGE_NAME }}:${{ github.event.inputs.tag || 'latest' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Update docker-compose.sha256
-        shell: bash
-        run: |
-          # Generate SHA256 hash of docker-compose for integrity verification
-          sha256sum infra/firecrawl/docker-compose.portainer.yml > infra/firecrawl/docker-compose.portainer.yml.sha256
-
-      - name: Commit and push docker-compose hash
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "chore: update docker-compose hash"
-          file_pattern: infra/firecrawl/docker-compose.portainer.yml.sha256
