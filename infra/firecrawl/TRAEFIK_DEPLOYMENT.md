@@ -4,6 +4,15 @@ This directory contains a Traefik-ready Firecrawl deployment for Portainer stack
 
 ## Quick Start
 
+### 0. Generate Secrets
+
+Before deploying, generate two random secrets:
+
+```bash
+BULL_AUTH_KEY=$(openssl rand -hex 32)
+POSTGRES_PASSWORD=$(openssl rand -hex 32)
+```
+
 ### 1. Import into Portainer
 
 1. Open Portainer → Stacks → Add stack
