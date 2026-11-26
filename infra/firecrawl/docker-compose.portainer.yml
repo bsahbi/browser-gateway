@@ -53,6 +53,12 @@ services:
       - playwright-cache:/ms-playwright
     tmpfs:
       - /tmp/.cache:noexec,nosuid,size=512m
+    healthcheck:
+      test: ["CMD", "true"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # Redis for job queues
   redis:
