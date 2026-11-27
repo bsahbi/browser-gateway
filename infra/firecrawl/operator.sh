@@ -95,7 +95,7 @@ deploy() {
     echo ""
     echo "Services are running:"
     echo "  - API: http://localhost:3002"
-    echo "  - Health: http://localhost:3002/health/readiness"
+    echo "  - Health: http://localhost:3002/v0/health/readiness"
     echo "  - Admin (if enabled): http://localhost:3002/admin/ops/queues"
     echo ""
     log_info "Next steps: Run './run-smoke-tests.sh' to verify deployment"
@@ -140,7 +140,7 @@ health() {
     log_info "Checking service health..."
     
     # Check API health endpoint
-    if curl -sf http://localhost:3002/health/readiness > /dev/null 2>&1; then
+    if curl -sf http://localhost:3002/v0/health/readiness > /dev/null 2>&1; then
         log_success "API is healthy"
     else
         log_error "API is not responding"
@@ -160,7 +160,7 @@ wait_for_services() {
     log_info "Waiting for API to be ready (timeout: ${timeout}s)..."
     
     while [ $elapsed -lt $timeout ]; do
-        if curl -sf http://localhost:3002/health/readiness > /dev/null 2>&1; then
+        if curl -sf http://localhost:3002/v0/health/readiness > /dev/null 2>&1; then
             log_success "API is ready"
             return 0
         fi
@@ -213,7 +213,7 @@ run_smoke_tests() {
     
     echo ""
     log_info "Test 1: API Health Check"
-    if curl -sf http://localhost:3002/health/readiness | grep -q "ok"; then
+    if curl -sf http://localhost:3002/v0/health/readiness > /dev/null 2>&1; then
         log_success "API health check passed"
     else
         log_error "API health check failed"

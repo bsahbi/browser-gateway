@@ -17,11 +17,15 @@ const { FirecrawlApp } = require('firecrawl');
 // ============================================
 
 const API_URL = process.env.FIRECRAWL_API_URL || 'http://localhost:3002';
-const API_KEY = process.env.FIRECRAWL_API_KEY || 'changeme';
+// Self-hosted Firecrawl does not need an API key when USE_DB_AUTHENTICATION=false.
+// Set FIRECRAWL_API_KEY only when the deployment has an application-level
+// authentication implementation. This direct SDK example is for loopback or
+// private ingress; use the MCP endpoint for the Traefik BasicAuth deployment.
+const API_KEY = process.env.FIRECRAWL_API_KEY;
 
 // Initialize Firecrawl client with P0 configuration
 const firecrawl = new FirecrawlApp({
-    apiKey: API_KEY,
+    ...(API_KEY ? { apiKey: API_KEY } : {}),
     apiUrl: API_URL,
 });
 

@@ -1,0 +1,12 @@
+# Deployment secrets must never enter a Docker build context.
+.env
+**/.env
+*.env.local
+
+# The API wrapper Dockerfile does not need repository history or local tooling.
+.git
+.github
+.agents
+.codex
+node_modules
+**/node_modules
