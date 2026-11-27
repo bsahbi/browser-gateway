@@ -6,23 +6,6 @@ image, and an official Firecrawl MCP bridge. Only the API and MCP bridge join
 the Traefik network; Redis, RabbitMQ, PostgreSQL, and Playwright are never
 published.
 
-## Why the previous stack failed
-
-The original Portainer file was not an upstream Firecrawl topology:
-
-- it used floating `latest` images and `NUQ_BACKEND=redis`, although this
-  Firecrawl release uses RabbitMQ plus NuQ PostgreSQL by default;
-- it substituted plain PostgreSQL, which lacks NuQ's initialization schema and
-  `pg_cron` configuration;
-- it exposed a second Traefik router for Playwright under the same hostname as
-  the API; and
-- its local counterpart requested `v2.11.162`, but the published API image tag
-  is `2.11.162` (without `v`).
-
-`GET /` returning `Cannot GET /` is normal for the Firecrawl API: it is not a
-web UI. For this pinned release the readiness probe is
-`GET /v0/health/readiness`.
-
 ## Deploy in Portainer
 
 1. On the Docker endpoint, identify the existing external network used by
@@ -137,6 +120,38 @@ curl --fail http://127.0.0.1:3002/v0/health/readiness
 The local MCP bridge is `http://127.0.0.1:3000/mcp`. Both ports bind to
 loopback, so neither is externally reachable. Run
 `./run-smoke-tests.sh` after the API becomes healthy.
+
+## Use the JavaScript integration helper
+
+`infra/firecrawl/agent-integration.js` is a small CommonJS helper around the
+official Firecrawl Node SDK. It exports `scrapeUrl`, `crawlUrl`, and
+`pollCrawlStatus`, and also runs a scrape/crawl example when invoked directly.
+
+Use it from a trusted machine that can reach the API without Traefik BasicAuth
+(for example, the local operator stack):
+
+```sh
+cd infra/firecrawl
+npm install firecrawl
+FIRECRAWL_API_URL=http://127.0.0.1:3002 node agent-integration.js
+```
+
+Import its helpers into an internal Node application instead of running the
+example:
+
+```js
+const { scrapeUrl, crawlUrl, pollCrawlStatus } = require('./agent-integration');
+
+const page = await scrapeUrl('https://example.com', { formats: ['markdown'] });
+const crawl = await crawlUrl('https://example.com', { limit: 5 });
+const result = await pollCrawlStatus(crawl.jobId);
+```
+
+The helper intentionally sends no API key when database authentication is
+disabled. It does not support the Traefik BasicAuth header used by the public
+Portainer endpoint; use the `/mcp` endpoint for that deployment. Its structured
+extraction example also needs an approved model provider configured in
+Firecrawl.
 
 ## Upgrades and rollback
 
