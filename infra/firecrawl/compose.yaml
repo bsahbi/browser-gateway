@@ -1,11 +1,14 @@
-# Workplane Browser Gateway - P0 Firecrawl Standalone
-# Secure, independently deployable Docker Compose stack
-# Version: 1.0.0 | Pin: firecrawl v2.11.162
-
+# Self-hosted Firecrawl v2.11.162 with a local Streamable-HTTP MCP bridge.
+# This local/operator variant binds API and MCP ports to loopback.
+# Use docker-compose.portainer.yml when Traefik is the ingress.
 name: workplane-firecrawl-p0
 
 x-common-service: &common-service
   restart: unless-stopped
+  ulimits:
+    nofile:
+      soft: 65535
+      hard: 65535
   logging:
     driver: json-file
     options:
@@ -18,35 +21,41 @@ x-common-service: &common-service
     - "host.docker.internal:host-gateway"
 
 x-common-env: &common-env
-  REDIS_URL: ${REDIS_URL:-redis://redis:6379}
-  REDIS_RATE_LIMIT_URL: ${REDIS_RATE_LIMIT_URL:-${REDIS_URL:-redis://redis:6379}}
-  PLAYWRIGHT_MICROSERVICE_URL: ${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright-service:3000/scrape}
+  REDIS_URL: redis://redis:6379
+  REDIS_RATE_LIMIT_URL: redis://redis:6379
+  PLAYWRIGHT_MICROSERVICE_URL: http://playwright-service:3000/scrape
   POSTGRES_USER: ${POSTGRES_USER:-postgres}
-  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
   POSTGRES_DB: ${POSTGRES_DB:-postgres}
-  POSTGRES_HOST: ${POSTGRES_HOST:-nuq-postgres}
-  POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+  POSTGRES_HOST: nuq-postgres
+  POSTGRES_PORT: "5432"
+  USE_DB_AUTHENTICATION: ${USE_DB_AUTHENTICATION:-false}
   NUM_WORKERS_PER_QUEUE: ${NUM_WORKERS_PER_QUEUE:-4}
   CRAWL_CONCURRENT_REQUESTS: ${CRAWL_CONCURRENT_REQUESTS:-5}
   MAX_CONCURRENT_JOBS: ${MAX_CONCURRENT_JOBS:-3}
   BROWSER_POOL_SIZE: ${BROWSER_POOL_SIZE:-3}
-  BULL_AUTH_KEY: ${BULL_AUTH_KEY}
-  USE_DB_AUTHENTICATION: ${USE_DB_AUTHENTICATION:-false}
+  BULL_AUTH_KEY: ${BULL_AUTH_KEY:?BULL_AUTH_KEY must be set}
   LOGGING_LEVEL: ${LOGGING_LEVEL:-info}
-  HOST: "0.0.0.0"
-  INTERNAL_PORT: ${INTERNAL_PORT:-3002}
-  WORKER_PORT: ${WORKER_PORT:-3005}
-  HARNESS_STARTUP_TIMEOUT_MS: ${HARNESS_STARTUP_TIMEOUT_MS:-60000}
-  ENV: production
+  PROXY_SERVER: ${PROXY_SERVER:-}
+  PROXY_USERNAME: ${PROXY_USERNAME:-}
+  PROXY_PASSWORD: ${PROXY_PASSWORD:-}
 
 services:
-  # API Gateway - Main entry point
   api:
     <<: *common-service
-    image: ghcr.io/firecrawl/firecrawl:${FIRECRAWL_VERSION:-v2.11.162}
+    # Tag 2.11.162 exists; v2.11.162 does not. The digest makes this immutable.
+    image: ${FIRECRAWL_API_IMAGE:-ghcr.io/firecrawl/firecrawl:2.11.162@sha256:1b223ef18d410f67615f32ccaa3dcedfc26af4286f096247bddca3b624545e63}
+    command: ["node", "dist/src/harness.js", "--start-docker"]
     environment:
       <<: *common-env
-      NUQ_RABBITMQ_URL: amqp://rabbitmq:5672
+      HOST: "0.0.0.0"
+      PORT: "3002"
+      EXTRACT_WORKER_PORT: "3004"
+      WORKER_PORT: "3005"
+      # RABBITMQ_PASSWORD is generated as hex so it is safe in this AMQP URL.
+      NUQ_RABBITMQ_URL: amqp://${RABBITMQ_USER:-firecrawl}:${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD must be set}@rabbitmq:5672
+      HARNESS_STARTUP_TIMEOUT_MS: ${HARNESS_STARTUP_TIMEOUT_MS:-60000}
+      ENV: production
     depends_on:
       redis:
         condition: service_started
@@ -56,47 +65,33 @@ services:
         condition: service_healthy
       nuq-postgres:
         condition: service_healthy
-        required: false
     ports:
-      - "${API_PORT:-3002}:3002"
-    volumes:
-      - fdb-cluster-file:/var/fdb:ro
-    # Resource limits for Docker Compose
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 4G
-        reservations:
-          cpus: '1.0'
-          memory: 2G
-    security_opt:
-      - no-new-privileges:true
-    # Health check
+      - "127.0.0.1:${API_PORT:-3002}:3002"
+    cpus: 2.0
+    mem_limit: 4G
+    memswap_limit: 4G
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3002/health/readiness || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3002/v0/health/readiness >/dev/null || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 30s
+      retries: 12
+      start_period: 60s
 
-  # Playwright browser service for JavaScript rendering
   playwright-service:
-    image: mcr.microsoft.com/playwright:v1.50.1-jammy
+    image: ghcr.io/firecrawl/playwright-service:latest@sha256:227ce3d8059173925a5a0697c63a1e947662cca934a609151651f578774edd5d
+    restart: unless-stopped
     environment:
-      PORT: 3000
-      PROXY_SERVER: ${PROXY_SERVER}
-      PROXY_USERNAME: ${PROXY_USERNAME}
-      PROXY_PASSWORD: ${PROXY_PASSWORD}
+      PORT: "3000"
+      PROXY_SERVER: ${PROXY_SERVER:-}
+      PROXY_USERNAME: ${PROXY_USERNAME:-}
+      PROXY_PASSWORD: ${PROXY_PASSWORD:-}
       ALLOW_LOCAL_WEBHOOKS: ${ALLOW_LOCAL_WEBHOOKS:-false}
       BLOCK_MEDIA: ${BLOCK_MEDIA:-false}
       MAX_CONCURRENT_PAGES: ${CRAWL_CONCURRENT_REQUESTS:-5}
-      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     networks:
       - backend
     security_opt:
       - no-new-privileges:true
-      - apparmor=default
     cap_drop:
       - ALL
     cap_add:
@@ -104,19 +99,11 @@ services:
       - SETGID
       - SETUID
       - DAC_OVERRIDE
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          cpus: '1.5'
-          memory: 2G
-        reservations:
-          cpus: '0.5'
-          memory: 1G
     tmpfs:
       - /tmp/.cache:noexec,nosuid,size=512m
-    volumes:
-      - playwright-cache:/ms-playwright
+    cpus: 1.5
+    mem_limit: 2G
+    memswap_limit: 2G
     logging:
       driver: json-file
       options:
@@ -124,107 +111,98 @@ services:
         max-file: "3"
         compress: "true"
 
-  # Redis for caching and rate limiting
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
+    restart: unless-stopped
+    command: redis-server --bind 0.0.0.0 --appendonly yes --maxmemory 384mb --maxmemory-policy volatile-lru
     networks:
       - backend
-    command: redis-server --bind 0.0.0.0 --maxmemory all --maxmemory-policy volatile-lru
-    security_opt:
-      - no-new-privileges:true
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
     volumes:
       - redis-data:/data
-    logging:
-      driver: json-file
-      options:
-        max-size: "5m"
-        max-file: "2"
-        compress: "true"
+    cpus: 0.5
+    mem_limit: 512M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
-  # RabbitMQ for job queue
   rabbitmq:
-    image: rabbitmq:3.13-management-alpine
-    networks:
-      - backend
+    image: rabbitmq:3.13-management-alpine@sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281
+    restart: unless-stopped
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-firecrawl}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD must be set}
     command: rabbitmq-server
+    networks:
+      - backend
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    cpus: 0.5
+    mem_limit: 512M
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
       interval: 5s
       timeout: 5s
-      retries: 3
-      start_period: 10s
-    volumes:
-      - rabbitmq-data:/var/lib/rabbitmq
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-    logging:
-      driver: json-file
-      options:
-        max-size: "5m"
-        max-file: "2"
-        compress: "true"
+      retries: 12
+      start_period: 20s
 
-  # PostgreSQL for NuQ queue backend (standard PostgreSQL)
   nuq-postgres:
-    image: postgres:16-alpine
+    # Plain postgres lacks NuQ's schema and pg_cron setup and crashes workers.
+    image: ghcr.io/firecrawl/nuq-postgres:latest@sha256:d719b36160eac2fcbe16dc7e7360ddb9c82c40ea5da183d07bf4a755c6a0b2ae
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
       POSTGRES_DB: ${POSTGRES_DB:-postgres}
-    healthcheck:
-      test:
-        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
     networks:
       - backend
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          cpus: '0.25'
-          memory: 256M
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "3"
-        compress: "true"
+      - nuq-postgres-data:/var/lib/postgresql/data
+    cpus: 0.5
+    mem_limit: 768M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  mcp:
+    image: ghcr.io/firecrawl/firecrawl-mcp-server:latest@sha256:1625bc37a0b37e0b9b18627147b1858daa08a0270407d03b6a6fe354b63abf5b
+    # The pinned official MCP image currently publishes linux/amd64 only.
+    # Docker Desktop can emulate it on ARM; production Portainer hosts should
+    # use amd64 until Firecrawl publishes an ARM image.
+    platform: ${MCP_PLATFORM:-linux/amd64}
+    restart: unless-stopped
+    environment:
+      HTTP_STREAMABLE_SERVER: "true"
+      HOST: "0.0.0.0"
+      PORT: "3000"
+      FIRECRAWL_API_URL: http://api:3002
+      FIRECRAWL_MCP_ALLOWED_HOSTS: localhost,127.0.0.1,[::1]
+      FIRECRAWL_NO_SEARCH_FEEDBACK: "1"
+      FIRECRAWL_NO_ENDPOINT_FEEDBACK: "1"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - backend
+    ports:
+      - "127.0.0.1:${MCP_PORT:-3000}:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
 
 networks:
   backend:
     driver: bridge
-    internal: false
 
 volumes:
   redis-data:
   rabbitmq-data:
-  postgres-data:
-  fdb-cluster-file:
-  playwright-cache:
+  nuq-postgres-data:

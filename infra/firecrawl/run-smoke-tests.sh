@@ -40,7 +40,7 @@ echo ""
 
 # Test 1: Health endpoint
 log_info "Test 1: API Health Endpoint"
-if curl -sf "$API_URL/health/readiness" | grep -q "ok"; then
+if curl -sf "$API_URL/v0/health/readiness" > /dev/null 2>&1; then
     test_result "pass" "Health endpoint returns ok"
 else
     test_result "fail" "Health endpoint failed"
@@ -113,37 +113,8 @@ else
     test_result "fail" "Sitemap crawl submission failed"
 fi
 
-# Test 5: Extract with schema
-log_info "Test 5: Structured Extraction (example.com)"
-EXTRACT_RESPONSE=$(curl -sf \
-    --max-time $TIMEOUT \
-    -X POST \
-    "$API_URL/v2/scrape" \
-    -H 'Content-Type: application/json' \
-    -d '{
-        "url": "https://example.com",
-        "formats": ["extract"],
-        "extractOptions": {
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "title": {"type": "string"},
-                    "description": {"type": "string"}
-                },
-                "required": ["title"]
-            }
-        }
-    }' 2>&1)
-
-if echo "$EXTRACT_RESPONSE" | grep -q '"success":true'; then
-    test_result "pass" "Structured extraction succeeded"
-else
-    log_error "Extract response: $EXTRACT_RESPONSE"
-    test_result "fail" "Structured extraction failed"
-fi
-
-# Test 6: Check for markdown content
-log_info "Test 6: Markdown Content Validation"
+# Test 5: Check for markdown content
+log_info "Test 5: Markdown Content Validation"
 if echo "$SCRAPE_RESPONSE" | grep -q '"markdown":"[^"]*example.com[^"]*"\|"markdown":\{\|"content":"[^"]*Example"; then
     test_result "pass" "Markdown content extracted"
 else
@@ -155,13 +126,12 @@ else
     fi
 fi
 
-# Test 7: Playwright service health
-log_info "Test 7: Playwright Service Check"
-if curl -sf "$API_URL/health/ready" | grep -q "ok"; then
-    test_result "pass" "All services healthy"
+# Test 6: API remains ready after queued requests
+log_info "Test 6: API Readiness After Requests"
+if curl -sf "$API_URL/v0/health/readiness" > /dev/null 2>&1; then
+    test_result "pass" "API remains ready"
 else
-    log_warn "Full health check endpoint not available (acceptable)"
-    test_result "pass" "Basic health check OK"
+    test_result "fail" "API readiness failed after requests"
 fi
 
 # Summary

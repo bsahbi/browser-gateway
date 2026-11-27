@@ -1,64 +1,129 @@
+# Portainer/Traefik deployment of Firecrawl v2.11.162 and an MCP bridge.
+# Required variables are documented in portainer.env.example.
+name: workplane-firecrawl
+
+x-common-service: &common-service
+  restart: unless-stopped
+  ulimits:
+    nofile:
+      soft: 65535
+      hard: 65535
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "3"
+      compress: "true"
+  networks:
+    - backend
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+x-common-env: &common-env
+  REDIS_URL: redis://redis:6379
+  REDIS_RATE_LIMIT_URL: redis://redis:6379
+  PLAYWRIGHT_MICROSERVICE_URL: http://playwright-service:3000/scrape
+  POSTGRES_USER: ${POSTGRES_USER:-postgres}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+  POSTGRES_DB: ${POSTGRES_DB:-postgres}
+  POSTGRES_HOST: nuq-postgres
+  POSTGRES_PORT: "5432"
+  USE_DB_AUTHENTICATION: ${USE_DB_AUTHENTICATION:-false}
+  NUM_WORKERS_PER_QUEUE: ${NUM_WORKERS_PER_QUEUE:-4}
+  CRAWL_CONCURRENT_REQUESTS: ${CRAWL_CONCURRENT_REQUESTS:-5}
+  MAX_CONCURRENT_JOBS: ${MAX_CONCURRENT_JOBS:-3}
+  BROWSER_POOL_SIZE: ${BROWSER_POOL_SIZE:-3}
+  BULL_AUTH_KEY: ${BULL_AUTH_KEY:?BULL_AUTH_KEY must be set}
+  LOGGING_LEVEL: ${LOGGING_LEVEL:-info}
+  PROXY_SERVER: ${PROXY_SERVER:-}
+  PROXY_USERNAME: ${PROXY_USERNAME:-}
+  PROXY_PASSWORD: ${PROXY_PASSWORD:-}
+
 services:
-  # Firecrawl API Gateway
-  firecrawl-api:
-    image: ghcr.io/firecrawl/firecrawl:latest
-    container_name: firecrawl-api
-    restart: unless-stopped
+  api:
+    <<: *common-service
+    image: ${FIRECRAWL_API_IMAGE:-ghcr.io/firecrawl/firecrawl:2.11.162@sha256:1b223ef18d410f67615f32ccaa3dcedfc26af4286f096247bddca3b624545e63}
+    command: ["node", "dist/src/harness.js", "--start-docker"]
     environment:
-      - BULL_AUTH_KEY=${BULL_AUTH_KEY}
-      - NUM_WORKERS_PER_QUEUE=5
-      - CRAWL_CONCURRENT_REQUESTS=5
-      - API_PORT=3002
-      - REDIS_URL=redis://redis:6379
-      - PLAYWRIGHT_MICROSERVICE_URL=http://playwright:3000/scrape
-      - NUQ_BACKEND=redis
-      - DOMAIN_NAME=${DOMAIN_NAME:-firecrawl.localhost}
-    networks:
-      - firecrawl-net
-    labels:
-      - traefik.enable=true
-      - traefik.http.routers.firecrawl.rule=Host(`${DOMAIN_NAME}`)
-      - traefik.http.routers.firecrawl.entrypoints=websecure
-      - traefik.http.routers.firecrawl.tls.certresolver=letsencrypt
-      - traefik.http.services.firecrawl.loadbalancer.server.port=3002
+      <<: *common-env
+      HOST: "0.0.0.0"
+      PORT: "3002"
+      EXTRACT_WORKER_PORT: "3004"
+      WORKER_PORT: "3005"
+      NUQ_RABBITMQ_URL: amqp://${RABBITMQ_USER:-firecrawl}:${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD must be set}@rabbitmq:5672
+      HARNESS_STARTUP_TIMEOUT_MS: ${HARNESS_STARTUP_TIMEOUT_MS:-60000}
+      ENV: production
     depends_on:
       redis:
-        condition: service_healthy
-      playwright:
         condition: service_started
-
-  # Playwright service for browser automation
-  playwright:
-    image: ghcr.io/firecrawl/playwright-service:latest
-    container_name: firecrawl-playwright
-    restart: unless-stopped
-    environment:
-      - PORT=3000
-      - PROXY_SERVER=${PROXY_SERVER}
-      - PROXY_USERNAME=${PROXY_USERNAME}
-      - PROXY_PASSWORD=${PROXY_PASSWORD}
-      - MAX_CONCURRENT_PAGES=10
+      playwright-service:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      nuq-postgres:
+        condition: service_healthy
     networks:
-      - firecrawl-net
+      - backend
+      - traefik-public
+    cpus: 2.0
+    mem_limit: 4G
+    memswap_limit: 4G
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3002/v0/health/readiness >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
     labels:
       - traefik.enable=true
-      - traefik.http.routers.playwright.rule=Host(`${DOMAIN_NAME}`)
-      - traefik.http.routers.playwright.entrypoints=websecure
-      - traefik.http.routers.playwright.tls.certresolver=letsencrypt
-      - traefik.http.services.playwright.loadbalancer.server.port=3000
-    tmpfs:
-      - /tmp/.cache:noexec,nosuid,size=1g
+      - traefik.docker.network=${TRAEFIK_NETWORK:?TRAEFIK_NETWORK must name Traefik's external Docker network}
+      - traefik.http.routers.firecrawl-api.rule=Host(`${DOMAIN_NAME:?DOMAIN_NAME must be set}`)
+      - traefik.http.routers.firecrawl-api.entrypoints=websecure
+      - traefik.http.routers.firecrawl-api.tls=true
+      - traefik.http.routers.firecrawl-api.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.routers.firecrawl-api.middlewares=firecrawl-auth@docker
+      - traefik.http.services.firecrawl-api.loadbalancer.server.port=3002
+      - traefik.http.middlewares.firecrawl-auth.basicauth.users=${TRAEFIK_BASIC_AUTH:?TRAEFIK_BASIC_AUTH must be set}
+      - traefik.http.middlewares.firecrawl-auth.basicauth.removeheader=true
 
-  # Redis for job queues and rate limiting
-  redis:
-    image: redis:7-alpine
-    container_name: firecrawl-redis
+  playwright-service:
+    image: ghcr.io/firecrawl/playwright-service:latest@sha256:227ce3d8059173925a5a0697c63a1e947662cca934a609151651f578774edd5d
     restart: unless-stopped
-    command: redis-server --bind 0.0.0.0 --appendonly yes
+    environment:
+      PORT: "3000"
+      PROXY_SERVER: ${PROXY_SERVER:-}
+      PROXY_USERNAME: ${PROXY_USERNAME:-}
+      PROXY_PASSWORD: ${PROXY_PASSWORD:-}
+      ALLOW_LOCAL_WEBHOOKS: ${ALLOW_LOCAL_WEBHOOKS:-false}
+      BLOCK_MEDIA: ${BLOCK_MEDIA:-false}
+      MAX_CONCURRENT_PAGES: ${CRAWL_CONCURRENT_REQUESTS:-5}
     networks:
-      - firecrawl-net
+      - backend
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+      - DAC_OVERRIDE
+    tmpfs:
+      - /tmp/.cache:noexec,nosuid,size=512m
+    cpus: 1.5
+    mem_limit: 2G
+    memswap_limit: 2G
+
+  redis:
+    image: redis:7-alpine@sha256:7f7d30b7fdd09467bac58198a1f166dd69789d348d4fe859cccb20e0cf287fbe
+    restart: unless-stopped
+    command: redis-server --bind 0.0.0.0 --appendonly yes --maxmemory 384mb --maxmemory-policy volatile-lru
+    networks:
+      - backend
     volumes:
       - redis-data:/data
+    cpus: 0.5
+    mem_limit: 512M
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -66,10 +131,89 @@ services:
       retries: 5
       start_period: 5s
 
-volumes:
-  redis-data:
-  playwright-cache:
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine@sha256:606d8c0d6b3c18d1da9afc53bc7cdb2a8d5486df91b5a9830e9e07626c9ae281
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-firecrawl}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD must be set}
+    command: rabbitmq-server
+    networks:
+      - backend
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    cpus: 0.5
+    mem_limit: 512M
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "check_running"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  nuq-postgres:
+    image: ghcr.io/firecrawl/nuq-postgres:latest@sha256:d719b36160eac2fcbe16dc7e7360ddb9c82c40ea5da183d07bf4a755c6a0b2ae
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD must be set}
+      POSTGRES_DB: ${POSTGRES_DB:-postgres}
+    networks:
+      - backend
+    volumes:
+      - nuq-postgres-data:/var/lib/postgresql/data
+    cpus: 0.5
+    mem_limit: 768M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  mcp:
+    image: ghcr.io/firecrawl/firecrawl-mcp-server:latest@sha256:1625bc37a0b37e0b9b18627147b1858daa08a0270407d03b6a6fe354b63abf5b
+    platform: ${MCP_PLATFORM:-linux/amd64}
+    restart: unless-stopped
+    environment:
+      HTTP_STREAMABLE_SERVER: "true"
+      HOST: "0.0.0.0"
+      PORT: "3000"
+      FIRECRAWL_API_URL: http://api:3002
+      FIRECRAWL_MCP_ALLOWED_HOSTS: ${DOMAIN_NAME:?DOMAIN_NAME must be set}
+      FIRECRAWL_NO_SEARCH_FEEDBACK: "1"
+      FIRECRAWL_NO_ENDPOINT_FEEDBACK: "1"
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - backend
+      - traefik-public
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=${TRAEFIK_NETWORK:?TRAEFIK_NETWORK must name Traefik's external Docker network}
+      - traefik.http.routers.firecrawl-mcp.rule=Host(`${DOMAIN_NAME:?DOMAIN_NAME must be set}`) && PathPrefix(`/mcp`)
+      - traefik.http.routers.firecrawl-mcp.priority=100
+      - traefik.http.routers.firecrawl-mcp.entrypoints=websecure
+      - traefik.http.routers.firecrawl-mcp.tls=true
+      - traefik.http.routers.firecrawl-mcp.tls.certresolver=${TRAEFIK_CERT_RESOLVER:-letsencrypt}
+      - traefik.http.routers.firecrawl-mcp.middlewares=firecrawl-auth@docker
+      - traefik.http.services.firecrawl-mcp.loadbalancer.server.port=3000
 
 networks:
-  firecrawl-net:
+  backend:
     driver: bridge
+  traefik-public:
+    external: true
+    name: ${TRAEFIK_NETWORK:?TRAEFIK_NETWORK must name Traefik's external Docker network}
+
+volumes:
+  redis-data:
+  rabbitmq-data:
+  nuq-postgres-data:
