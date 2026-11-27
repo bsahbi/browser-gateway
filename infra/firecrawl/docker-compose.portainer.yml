@@ -11,11 +11,7 @@ services:
       - API_PORT=3002
       - REDIS_URL=redis://redis:6379
       - PLAYWRIGHT_MICROSERVICE_URL=http://playwright:3000/scrape
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=postgres
+      - NUQ_BACKEND=redis
       - DOMAIN_NAME=${DOMAIN_NAME:-firecrawl.localhost}
     networks:
       - firecrawl-net
@@ -30,8 +26,6 @@ services:
         condition: service_healthy
       playwright:
         condition: service_started
-      postgres:
-        condition: service_healthy
 
   # Playwright service for browser automation
   playwright:
@@ -55,12 +49,12 @@ services:
     tmpfs:
       - /tmp/.cache:noexec,nosuid,size=1g
 
-  # Redis for job queues
+  # Redis for job queues and rate limiting
   redis:
     image: redis:7-alpine
     container_name: firecrawl-redis
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: redis-server --bind 0.0.0.0 --appendonly yes
     networks:
       - firecrawl-net
     volumes:
@@ -72,29 +66,8 @@ services:
       retries: 5
       start_period: 5s
 
-  # PostgreSQL for NuQ queue backend
-  postgres:
-    image: postgres:16-alpine
-    container_name: firecrawl-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: postgres
-    networks:
-      - firecrawl-net
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
 volumes:
   redis-data:
-  postgres-data:
   playwright-cache:
 
 networks:
