@@ -45,7 +45,7 @@ export class PlaywrightProvider implements BrowserProvider {
 
   constructor(config: PlaywrightProviderConfig = {}) {
     this.config = {
-      browserUrl: config.browserUrl,
+      browserUrl: config.browserUrl || '',
       headless: config.headless ?? true,
       maxConcurrentPages: config.maxConcurrentPages || 5,
       timeoutMs: config.timeoutMs || 60000,
@@ -255,11 +255,11 @@ export class PlaywrightProvider implements BrowserProvider {
   private async extractMarkdown(page: Page): Promise<string> {
     return await page.evaluate(() => {
       // Remove scripts and styles
-      const scripts = (document as any).querySelectorAll('script, style, noscript');
-      scripts.forEach((el: any) => el.remove());
+      const scripts = document.querySelectorAll('script, style, noscript');
+      scripts.forEach((el: Element) => el.remove());
 
       // Get main content
-      const main = (document as any).querySelector('main, [role="main"], .main, #main') || (document as any).body;
+      const main = document.querySelector('main, [role="main"], .main, #main') as HTMLElement || document.body;
 
       // Extract text and convert to simple markdown
       let text = main.textContent || '';
