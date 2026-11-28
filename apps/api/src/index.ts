@@ -191,18 +191,11 @@ app.get('/v1/jobs/:jobId', async (req: Request, res: Response) => {
 
   try {
     const { jobId } = req.params;
-    // Extract provider from query params with proper type handling
-    // req.query.provider can be: string | string[] | ParsedQs | ParsedQs[] | undefined
-    const queryProvider = req.query.provider;
-    let provider: string | undefined = undefined;
-    
-    if (typeof queryProvider === 'string') {
-      provider = queryProvider;
-    } else if (Array.isArray(queryProvider) && queryProvider.length > 0 && typeof queryProvider[0] === 'string') {
-      provider = queryProvider[0];
-    }
+    // Cast query provider to expected type (string | undefined)
+    const provider = (req.query.provider as string | undefined) ?? 
+                     (Array.isArray(req.query.provider) ? req.query.provider[0] as string | undefined : undefined);
 
-    const status = await router.getJob(jobId, provider as string | undefined);
+    const status = await router.getJob(jobId, provider);
     res.json(successResponse(status, requestId, receivedAt));
   } catch (error) {
     const gatewayError = error as GatewayError;
@@ -221,18 +214,11 @@ app.post('/v1/jobs/:jobId/cancel', async (req: Request, res: Response) => {
 
   try {
     const { jobId } = req.params;
-    // Extract provider from query params with proper type handling
-    // req.query.provider can be: string | string[] | ParsedQs | ParsedQs[] | undefined
-    const queryProvider = req.query.provider;
-    let provider: string | undefined = undefined;
-    
-    if (typeof queryProvider === 'string') {
-      provider = queryProvider;
-    } else if (Array.isArray(queryProvider) && queryProvider.length > 0 && typeof queryProvider[0] === 'string') {
-      provider = queryProvider[0];
-    }
+    // Cast query provider to expected type (string | undefined)
+    const provider = (req.query.provider as string | undefined) ?? 
+                     (Array.isArray(req.query.provider) ? req.query.provider[0] as string | undefined : undefined);
 
-    const result = await router.cancel(jobId, provider as string | undefined);
+    const result = await router.cancel(jobId, provider);
     res.json(successResponse(result, requestId, receivedAt));
   } catch (error) {
     const gatewayError = error as GatewayError;
