@@ -53,6 +53,7 @@ RUN npm install && npm cache clean --force
 
 # Copy all packages (required for workspace resolution)
 COPY packages/contracts ./packages/contracts
+COPY packages/contracts/dist ./packages/contracts/dist
 COPY packages/router ./packages/router
 COPY packages/router/dist ./packages/router/dist
 COPY packages/capacity-manager ./packages/capacity-manager
