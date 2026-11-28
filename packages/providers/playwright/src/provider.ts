@@ -14,7 +14,8 @@ import {
   ERROR_CODES,
   GatewayError,
 } from '@browser-gateway/contracts';
-import { chromium, Browser, BrowserContext, Page } from 'playwright';
+/// <reference lib="dom" />
+import { chromium, Browser, Page, BrowserContext } from 'playwright';
 
 export interface PlaywrightProviderConfig {
   browserUrl?: string;

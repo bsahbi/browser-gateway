@@ -7,7 +7,7 @@
 
 import express, { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { createRouter } from '@browser-gateway/router';
+import { createRouter, BrowserProvider } from '@browser-gateway/router';
 import { createFirecrawlProvider } from '@browser-gateway/provider-firecrawl';
 import { createHttpProvider } from '@browser-gateway/provider-http';
 import { createPlaywrightProvider } from '@browser-gateway/provider-playwright';
@@ -55,7 +55,7 @@ const httpProvider = createHttpProvider({});
 const playwrightProvider = createPlaywrightProvider({});
 
 const router = createRouter({
-  providers: new Map([
+  providers: new Map<string, BrowserProvider>([
     ['firecrawl', firecrawlProvider],
     ['http', httpProvider],
     ['playwright', playwrightProvider],
