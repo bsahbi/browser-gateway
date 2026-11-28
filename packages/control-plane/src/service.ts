@@ -444,7 +444,7 @@ export async function createAuditEvent(
   actorId: string,
   tenantId?: string,
   resourceName?: string,
-  metadata?: Record<string, unknown>
+  _metadata?: Record<string, unknown>
 ): Promise<AuditEvent> {
   const event: AuditEvent = {
     id: createId(),
@@ -452,7 +452,6 @@ export async function createAuditEvent(
     tenantId,
     actorId,
     resourceName,
-    metadata,
     createdAt: new Date().toISOString(),
   };
 

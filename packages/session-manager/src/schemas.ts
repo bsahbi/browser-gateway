@@ -65,7 +65,7 @@ export const NavigationStateSchema = z.object({
   url: z.string().url(),
   title: z.string(),
   timestamp: z.string().datetime(),
-  screenshot?: string,
+  screenshot: z.string().optional(),
 });
 
 export type NavigationState = z.infer<typeof NavigationStateSchema>;

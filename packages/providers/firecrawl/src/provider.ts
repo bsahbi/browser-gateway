@@ -108,7 +108,7 @@ export class FirecrawlProvider implements BrowserProvider {
     try {
       const response = await fetch(
         `${this.config.apiUrl}/v0/health/readiness`,
-        { method: 'GET', timeout: 5000 }
+        { method: 'GET' }
       );
       const status = response.ok ? 'healthy' : 'degraded';
       return {
@@ -170,14 +170,14 @@ export class FirecrawlProvider implements BrowserProvider {
   ): Promise<ExecutionResult> {
     const body: FirecrawlScrapeRequest = {
       url: request.target.url,
-      formats: request.target.options?.formats || ['markdown'],
+      formats: (request.target.options?.formats as string[]) || ['markdown'],
     };
 
     if (request.constraints?.timeoutSeconds) {
       body.timeout = request.constraints.timeoutSeconds * 1000;
     }
     if (request.target.options?.waitFor) {
-      body.waitFor = request.target.options.waitFor;
+      body.waitFor = request.target.options.waitFor as number;
     }
 
     const response = await fetch(`${this.config.apiUrl}/v2/scrape`, {
@@ -229,7 +229,7 @@ export class FirecrawlProvider implements BrowserProvider {
       url: request.target.url,
       limit: request.constraints?.maxPages || 100,
       scrapeOptions: {
-        formats: request.target.options?.formats || ['markdown'],
+        formats: (request.target.options?.formats as string[]) || ['markdown'],
       },
     };
 

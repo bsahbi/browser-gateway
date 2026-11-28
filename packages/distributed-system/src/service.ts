@@ -40,7 +40,7 @@ export interface DistributedSystemConfig {
 export class DistributedSystem {
   private config: Required<DistributedSystemConfig>;
   private redis: Redis;
-  private hostId: string;
+  private hostId: string = '';
 
   constructor(config: DistributedSystemConfig) {
     this.config = {
@@ -53,7 +53,6 @@ export class DistributedSystem {
 
     this.redis = new Redis(this.config.redisUrl, {
       maxRetriesPerRequest: 3,
-      retryDelayOnFailover: 100,
     });
 
     // Start heartbeat
