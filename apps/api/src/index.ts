@@ -191,9 +191,9 @@ app.get('/v1/jobs/:jobId', async (req: Request, res: Response) => {
 
   try {
     const { jobId } = req.params;
-    const provider = Array.isArray(req.query.provider) 
+    const provider = (Array.isArray(req.query.provider) 
       ? req.query.provider[0] 
-      : (req.query.provider as string | undefined);
+      : req.query.provider) as string | undefined;
 
     const status = await router.getJob(jobId, provider);
     res.json(successResponse(status, requestId, receivedAt));
@@ -214,9 +214,9 @@ app.post('/v1/jobs/:jobId/cancel', async (req: Request, res: Response) => {
 
   try {
     const { jobId } = req.params;
-    const provider = Array.isArray(req.query.provider) 
+    const provider = (Array.isArray(req.query.provider) 
       ? req.query.provider[0] 
-      : (req.query.provider as string | undefined);
+      : req.query.provider) as string | undefined;
 
     const result = await router.cancel(jobId, provider);
     res.json(successResponse(result, requestId, receivedAt));
