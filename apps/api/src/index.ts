@@ -192,9 +192,14 @@ app.get('/v1/jobs/:jobId', async (req: Request, res: Response) => {
   try {
     const { jobId } = req.params;
     // Type guard: req.query.provider is 'string | string[] | undefined'
-    const provider = Array.isArray(req.query.provider) 
-      ? req.query.provider[0] as string | undefined
-      : req.query.provider as string | undefined;
+    let provider: string | undefined = undefined;
+    if (req.query.provider) {
+      if (Array.isArray(req.query.provider)) {
+        provider = req.query.provider[0];
+      } else {
+        provider = req.query.provider;
+      }
+    }
 
     const status = await router.getJob(jobId, provider);
     res.json(successResponse(status, requestId, receivedAt));
@@ -216,9 +221,14 @@ app.post('/v1/jobs/:jobId/cancel', async (req: Request, res: Response) => {
   try {
     const { jobId } = req.params;
     // Type guard: req.query.provider is 'string | string[] | undefined'
-    const provider = Array.isArray(req.query.provider) 
-      ? req.query.provider[0] as string | undefined
-      : req.query.provider as string | undefined;
+    let provider: string | undefined = undefined;
+    if (req.query.provider) {
+      if (Array.isArray(req.query.provider)) {
+        provider = req.query.provider[0];
+      } else {
+        provider = req.query.provider;
+      }
+    }
 
     const result = await router.cancel(jobId, provider);
     res.json(successResponse(result, requestId, receivedAt));
