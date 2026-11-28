@@ -198,7 +198,7 @@ app.get('/v1/jobs/:jobId', async (req: Request, res: Response) => {
     
     if (typeof queryProvider === 'string') {
       provider = queryProvider;
-    } else if (Array.isArray(queryProvider) && queryProvider.length > 0) {
+    } else if (Array.isArray(queryProvider) && queryProvider.length > 0 && typeof queryProvider[0] === 'string') {
       provider = queryProvider[0];
     }
 
@@ -228,7 +228,7 @@ app.post('/v1/jobs/:jobId/cancel', async (req: Request, res: Response) => {
     
     if (typeof queryProvider === 'string') {
       provider = queryProvider;
-    } else if (Array.isArray(queryProvider) && queryProvider.length > 0) {
+    } else if (Array.isArray(queryProvider) && queryProvider.length > 0 && typeof queryProvider[0] === 'string') {
       provider = queryProvider[0];
     }
 
