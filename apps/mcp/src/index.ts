@@ -51,8 +51,8 @@ const firecrawlProvider = createFirecrawlProvider({
   apiUrl: process.env.FIRECRAWL_API_URL || 'http://localhost:3002',
 });
 
-const httpProvider = createHttpProvider();
-const playwrightProvider = createPlaywrightProvider();
+const httpProvider = createHttpProvider({});
+const playwrightProvider = createPlaywrightProvider({});
 
 const router = createRouter({
   providers: new Map([
