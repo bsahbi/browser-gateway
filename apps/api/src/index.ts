@@ -191,9 +191,12 @@ app.get('/v1/jobs/:jobId', async (req: Request, res: Response) => {
 
   try {
     const { jobId } = req.params;
-    const provider = typeof req.query.provider === 'string' ? req.query.provider : undefined;
+    let provider: string | undefined;
+    if (typeof req.query.provider === 'string') {
+      provider = req.query.provider;
+    }
 
-    const status = await router.getJob(jobId, provider as string | undefined);
+    const status = await router.getJob(jobId, provider);
     res.json(successResponse(status, requestId, receivedAt));
   } catch (error) {
     const gatewayError = error as GatewayError;
@@ -212,9 +215,12 @@ app.post('/v1/jobs/:jobId/cancel', async (req: Request, res: Response) => {
 
   try {
     const { jobId } = req.params;
-    const provider = typeof req.query.provider === 'string' ? req.query.provider : undefined;
+    let provider: string | undefined;
+    if (typeof req.query.provider === 'string') {
+      provider = req.query.provider;
+    }
 
-    const result = await router.cancel(jobId, provider as string | undefined);
+    const result = await router.cancel(jobId, provider);
     res.json(successResponse(result, requestId, receivedAt));
   } catch (error) {
     const gatewayError = error as GatewayError;
