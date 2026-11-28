@@ -1,0 +1,19 @@
+{
+  "name": "@browser-gateway/provider-playwright",
+  "version": "1.0.0",
+  "description": "Playwright provider for Browser Gateway",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@browser-gateway/contracts": "1.0.0",
+    "playwright": "^1.50.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}
