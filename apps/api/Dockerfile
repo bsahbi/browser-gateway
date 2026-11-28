@@ -51,6 +51,19 @@ COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 # Install production dependencies only
 RUN npm install && npm cache clean --force
 
+# Manually create workspace symlinks
+RUN mkdir -p node_modules/@browser-gateway && \
+    ln -s /app/packages/contracts node_modules/@browser-gateway/contracts && \
+    ln -s /app/packages/router node_modules/@browser-gateway/router && \
+    ln -s /app/packages/control-plane node_modules/@browser-gateway/control-plane && \
+    ln -s /app/packages/session-manager node_modules/@browser-gateway/session-manager && \
+    ln -s /app/packages/capacity-manager node_modules/@browser-gateway/capacity-manager && \
+    ln -s /app/packages/distributed-system node_modules/@browser-gateway/distributed-system && \
+    ln -s /app/packages/providers/firecrawl node_modules/@browser-gateway/firecrawl && \
+    ln -s /app/packages/providers/http node_modules/@browser-gateway/http && \
+    ln -s /app/packages/providers/playwright node_modules/@browser-gateway/playwright && \
+    ln -s /app/packages/providers/mobile node_modules/@browser-gateway/mobile
+
 # Copy all packages (required for workspace resolution)
 COPY packages/contracts/dist ./packages/contracts/dist
 COPY packages/router/dist ./packages/router/dist
