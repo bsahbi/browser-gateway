@@ -100,7 +100,7 @@ router.get('/sessions', (req: AuthenticatedRequest, res: Response) => {
 
 // GET /sessions/:id - Get session
 router.get('/sessions/:id', (req: AuthenticatedRequest, res: Response) => {
-  const session = getSession(req.params.id);
+  const session = getSession(req.params.id as string);
   if (!session) {
     res.status(404).json({ error: 'Session not found' });
     return;
@@ -110,7 +110,7 @@ router.get('/sessions/:id', (req: AuthenticatedRequest, res: Response) => {
 
 // POST /sessions/:id/close - Close session
 router.post('/sessions/:id/close', (req: AuthenticatedRequest, res: Response) => {
-  const session = closeSession(req.params.id);
+  const session = closeSession(req.params.id as string);
   if (!session) {
     res.status(404).json({ error: 'Session not found' });
     return;
@@ -126,7 +126,7 @@ const ExtendSessionSchema = z.object({
 router.post('/sessions/:id/extend', (req: AuthenticatedRequest, res: Response) => {
   try {
     const { minutes } = ExtendSessionSchema.parse(req.body);
-    const session = extendSession(req.params.id, minutes);
+    const session = extendSession(req.params.id as string, minutes);
     if (!session) {
       res.status(404).json({ error: 'Session not found' });
       return;
@@ -149,7 +149,7 @@ router.post('/sessions/:id/extend', (req: AuthenticatedRequest, res: Response) =
 router.get('/sessions/:id/actions', (req: AuthenticatedRequest, res: Response) => {
   const limitParam = req.query.limit;
   const limit = parseInt(typeof limitParam === 'string' ? limitParam : '50') || 50;
-  const actions = getActions(req.params.id, limit);
+  const actions = getActions(req.params.id as string, limit);
   res.json(actions);
 });
 
@@ -165,7 +165,7 @@ router.post('/sessions/:id/navigate', (req: AuthenticatedRequest, res: Response)
     const { url, waitUntil, timeout } = NavigateSchema.parse(req.body);
     
     // Record navigation action
-    const action = recordAction(req.params.id, {
+    const action = recordAction(req.params.id as string, {
       type: 'navigate',
       payload: { url, waitUntil, timeout },
     });
@@ -176,7 +176,7 @@ router.post('/sessions/:id/navigate', (req: AuthenticatedRequest, res: Response)
     }
 
     // Record navigation state
-    recordNavigation(req.params.id, {
+    recordNavigation(req.params.id as string, {
       url,
       title: 'Loading...',
     });
@@ -201,7 +201,7 @@ router.post('/sessions/:id/click', (req: AuthenticatedRequest, res: Response) =>
   try {
     const { selector, timeout } = ClickSchema.parse(req.body);
     
-    const action = recordAction(req.params.id, {
+    const action = recordAction(req.params.id as string, {
       type: 'click',
       payload: { selector, timeout },
     });
@@ -232,7 +232,7 @@ router.post('/sessions/:id/screenshot', (req: AuthenticatedRequest, res: Respons
   try {
     const { fullPage, type, quality } = ScreenshotSchema.parse(req.body);
     
-    const action = recordAction(req.params.id, {
+    const action = recordAction(req.params.id as string, {
       type: 'screenshot',
       payload: { fullPage, type, quality },
     });
@@ -254,7 +254,7 @@ router.post('/sessions/:id/screenshot', (req: AuthenticatedRequest, res: Respons
 
 // GET /sessions/:id/history - Get navigation history
 router.get('/sessions/:id/history', (req: AuthenticatedRequest, res: Response) => {
-  const history = getNavigationHistory(req.params.id);
+  const history = getNavigationHistory(req.params.id as string);
   res.json(history);
 });
 
@@ -301,7 +301,7 @@ router.get('/profiles', (req: AuthenticatedRequest, res: Response) => {
 
 // GET /profiles/:id - Get profile
 router.get('/profiles/:id', (req: AuthenticatedRequest, res: Response) => {
-  const profile = getProfile(req.params.id);
+  const profile = getProfile(req.params.id as string);
   if (!profile) {
     res.status(404).json({ error: 'Profile not found' });
     return;
@@ -311,7 +311,7 @@ router.get('/profiles/:id', (req: AuthenticatedRequest, res: Response) => {
 
 // PATCH /profiles/:id - Update profile
 router.patch('/profiles/:id', (req: AuthenticatedRequest, res: Response) => {
-  const profile = updateProfile(req.params.id, req.body);
+  const profile = updateProfile(req.params.id as string, req.body);
   if (!profile) {
     res.status(404).json({ error: 'Profile not found' });
     return;
@@ -321,7 +321,7 @@ router.patch('/profiles/:id', (req: AuthenticatedRequest, res: Response) => {
 
 // DELETE /profiles/:id - Delete profile
 router.delete('/profiles/:id', (req: AuthenticatedRequest, res: Response) => {
-  const deleted = deleteProfile(req.params.id);
+  const deleted = deleteProfile(req.params.id as string);
   if (!deleted) {
     res.status(404).json({ error: 'Profile not found' });
     return;

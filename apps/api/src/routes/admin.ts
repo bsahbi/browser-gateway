@@ -135,7 +135,7 @@ router.post('/tenants', async (req: AuthenticatedRequest, res: Response) => {
 
 // GET /admin/tenants/:id - Get tenant
 router.get('/tenants/:id', async (req: AuthenticatedRequest, res: Response) => {
-  const tenant = getTenant(req.params.id);
+  const tenant = getTenant(req.params.id as string);
   if (!tenant) {
     res.status(404).json({ error: 'Tenant not found' });
     return;
@@ -146,7 +146,7 @@ router.get('/tenants/:id', async (req: AuthenticatedRequest, res: Response) => {
 // PATCH /admin/tenants/:id - Update tenant
 router.patch('/tenants/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const tenant = await updateTenant(req.params.id, req.body);
+    const tenant = await updateTenant(req.params.id as string, req.body);
     res.json(tenant);
   } catch (error) {
     res.status(404).json({ error: 'Tenant not found' });
@@ -156,7 +156,7 @@ router.patch('/tenants/:id', async (req: AuthenticatedRequest, res: Response) =>
 // POST /admin/tenants/:id/suspend - Suspend tenant
 router.post('/tenants/:id/suspend', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const tenant = await suspendTenant(req.params.id, req.userId || 'system');
+    const tenant = await suspendTenant(req.params.id as string, req.userId || 'system');
     res.json(tenant);
   } catch (error) {
     res.status(404).json({ error: 'Tenant not found' });
@@ -225,7 +225,7 @@ router.post('/users/login', async (req: AuthenticatedRequest, res: Response) => 
 
 // GET /admin/tenants/:tenantId/members - List members
 router.get('/tenants/:tenantId/members', async (req: AuthenticatedRequest, res: Response) => {
-  const members = getTenantMembers(req.params.tenantId);
+  const members = getTenantMembers(req.params.tenantId as string);
   res.json(members);
 });
 
@@ -238,7 +238,7 @@ const AddMemberSchema = z.object({
 router.post('/tenants/:tenantId/members', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { userId, role } = AddMemberSchema.parse(req.body);
-    const membership = await createMembership(req.params.tenantId, userId, role);
+    const membership = await createMembership(req.params.tenantId as string, userId, role);
     res.status(201).json(membership);
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -255,7 +255,7 @@ router.post('/tenants/:tenantId/members', async (req: AuthenticatedRequest, res:
 
 // GET /admin/tenants/:tenantId/api-keys - List API keys
 router.get('/tenants/:tenantId/api-keys', async (req: AuthenticatedRequest, res: Response) => {
-  const keys = getAPIKeys(req.params.tenantId);
+  const keys = getAPIKeys(req.params.tenantId as string);
   // Don't return full keys, just metadata
   const safeKeys = keys.map((k: any) => ({
     id: k.id,
@@ -280,7 +280,7 @@ router.post('/tenants/:tenantId/api-keys', async (req: AuthenticatedRequest, res
   try {
     const { name, scopes } = CreateAPIKeySchema.parse(req.body);
     const result = await createAPIKey(
-      req.params.tenantId,
+      req.params.tenantId as string,
       name,
       req.userId || 'system',
       scopes
@@ -298,7 +298,7 @@ router.post('/tenants/:tenantId/api-keys', async (req: AuthenticatedRequest, res
 // DELETE /admin/api-keys/:id - Revoke API key
 router.delete('/api-keys/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    await revokeAPIKey(req.params.id, req.userId || 'system');
+    await revokeAPIKey(req.params.id as string, req.userId || 'system');
     res.status(204).send();
   } catch (error) {
     res.status(404).json({ error: 'API key not found' });
@@ -353,7 +353,7 @@ const AssignPlanSchema = z.object({
 router.post('/tenants/:tenantId/plan', async (req: AuthenticatedRequest, res: Response) => {
   try {
     const { planId } = AssignPlanSchema.parse(req.body);
-    const tenantPlan = assignPlan(req.params.tenantId, planId);
+    const tenantPlan = assignPlan(req.params.tenantId as string, planId);
     res.status(201).json(tenantPlan);
   } catch (error) {
     res.status(400).json({ error: 'Failed to assign plan' });
@@ -362,7 +362,7 @@ router.post('/tenants/:tenantId/plan', async (req: AuthenticatedRequest, res: Re
 
 // GET /admin/tenants/:tenantId/plan - Get tenant's plan
 router.get('/tenants/:tenantId/plan', async (req: AuthenticatedRequest, res: Response) => {
-  const tenantPlan = getTenantPlan(req.params.tenantId);
+  const tenantPlan = getTenantPlan(req.params.tenantId as string);
   if (!tenantPlan) {
     res.status(404).json({ error: 'No plan assigned' });
     return;
@@ -374,15 +374,15 @@ router.get('/tenants/:tenantId/plan', async (req: AuthenticatedRequest, res: Res
 // Usage Routes
 // ============================================
 
-// GET /admin/tenants/:tenantId/usage - Get usage report
+// GET /tenants/:tenantId/usage - Get usage report
 router.get('/tenants/:tenantId/usage', async (req: AuthenticatedRequest, res: Response) => {
   const startDateParam = req.query.startDate;
   const startDate = typeof startDateParam === 'string' 
     ? new Date(startDateParam)
     : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
 
-  const totals = calculateUsageTotals(req.params.tenantId, startDate);
-  const events = getUsageEvents(req.params.tenantId, startDate);
+  const totals = calculateUsageTotals(req.params.tenantId as string, startDate);
+  const events = getUsageEvents(req.params.tenantId as string, startDate);
 
   res.json({
     period: {
@@ -435,7 +435,7 @@ router.post('/providers', async (req: AuthenticatedRequest, res: Response) => {
 // PATCH /admin/providers/:id - Update provider config
 router.patch('/providers/:id', async (req: AuthenticatedRequest, res: Response) => {
   try {
-    const provider = updateProviderConfig(req.params.id, req.body);
+    const provider = updateProviderConfig(req.params.id as string, req.body);
     res.json(provider);
   } catch (error) {
     res.status(404).json({ error: 'Provider not found' });
@@ -450,7 +450,7 @@ router.patch('/providers/:id', async (req: AuthenticatedRequest, res: Response) 
 router.get('/tenants/:tenantId/audit', async (req: AuthenticatedRequest, res: Response) => {
   const limitParam = req.query.limit;
   const limit = Math.min(parseInt(typeof limitParam === 'string' ? limitParam : '100') || 100, 500);
-  const events = getAuditEvents(req.params.tenantId, limit);
+  const events = getAuditEvents(req.params.tenantId as string, limit);
   res.json(events);
 });
 
