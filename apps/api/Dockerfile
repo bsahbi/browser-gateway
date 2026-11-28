@@ -3,9 +3,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy package files
+# Copy root package.json with workspace configuration
 COPY package*.json ./
 COPY tsconfig.json ./
+
+# Copy all workspace package.json files (required for npm to recognize workspaces)
 COPY apps/api/package*.json ./apps/api/
 COPY packages/contracts/package*.json ./packages/contracts/
 COPY packages/router/package*.json ./packages/router/
@@ -16,14 +18,15 @@ COPY packages/distributed-system/package*.json ./packages/distributed-system/
 COPY packages/providers/firecrawl/package*.json ./packages/providers/firecrawl/
 COPY packages/providers/http/package*.json ./packages/providers/http/
 COPY packages/providers/playwright/package*.json ./packages/providers/playwright/
+COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 
-# Install dependencies
-RUN npm ci
+# Install all dependencies (including workspaces)
+RUN npm install
 
 # Copy source code
 COPY . .
 
-# Build
+# Build all packages
 RUN npm run build
 
 # Production stage
@@ -48,10 +51,10 @@ COPY packages/providers/http/package*.json ./packages/providers/http/
 COPY packages/providers/playwright/package*.json ./packages/providers/playwright/
 COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 
-# Install production dependencies only
-RUN npm install && npm cache clean --force
+# Install production dependencies
+RUN npm install --production && npm cache clean --force
 
-# Copy all packages (required for workspace resolution)
+# Copy workspace packages (required for module resolution)
 COPY packages/contracts ./packages/contracts
 COPY packages/router ./packages/router
 COPY packages/control-plane ./packages/control-plane
@@ -63,18 +66,8 @@ COPY packages/providers/http ./packages/providers/http
 COPY packages/providers/playwright ./packages/providers/playwright
 COPY packages/providers/mobile ./packages/providers/mobile
 
-# Manually create workspace symlinks (after packages are copied)
-RUN mkdir -p node_modules/@browser-gateway && \
-    ln -s /app/packages/contracts node_modules/@browser-gateway/contracts && \
-    ln -s /app/packages/router node_modules/@browser-gateway/router && \
-    ln -s /app/packages/control-plane node_modules/@browser-gateway/control-plane && \
-    ln -s /app/packages/session-manager node_modules/@browser-gateway/session-manager && \
-    ln -s /app/packages/capacity-manager node_modules/@browser-gateway/capacity-manager && \
-    ln -s /app/packages/distributed-system node_modules/@browser-gateway/distributed-system && \
-    ln -s /app/packages/providers/firecrawl node_modules/@browser-gateway/firecrawl && \
-    ln -s /app/packages/providers/http node_modules/@browser-gateway/http && \
-    ln -s /app/packages/providers/playwright node_modules/@browser-gateway/playwright && \
-    ln -s /app/packages/providers/mobile node_modules/@browser-gateway/mobile
+# Copy node_modules from builder (includes workspace symlinks)
+COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built artifacts
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
