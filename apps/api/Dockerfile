@@ -37,9 +37,19 @@ RUN apk add --no-cache curl
 # Copy package files
 COPY package*.json ./
 COPY apps/api/package*.json ./apps/api/
+COPY packages/contracts/package*.json ./packages/contracts/
+COPY packages/router/package*.json ./packages/router/
+COPY packages/capacity-manager/package*.json ./packages/capacity-manager/
+COPY packages/session-manager/package*.json ./packages/session-manager/
+COPY packages/control-plane/package*.json ./packages/control-plane/
+COPY packages/distributed-system/package*.json ./packages/distributed-system/
+COPY packages/providers/firecrawl/package*.json ./packages/providers/firecrawl/
+COPY packages/providers/http/package*.json ./packages/providers/http/
+COPY packages/providers/playwright/package*.json ./packages/providers/playwright/
+COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 
 # Install production dependencies only
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install && npm cache clean --force
 
 # Copy all packages (required for workspace resolution)
 COPY packages/contracts ./packages/contracts
