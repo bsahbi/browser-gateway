@@ -8,6 +8,8 @@
  * - Usage Events, Pricing
  */
 
+import { randomBytes } from 'crypto';
+
 import { z } from 'zod';
 
 // ============================================
@@ -259,6 +261,6 @@ export function createId(): string {
 
 export function generateAPIKey(): string {
   const prefix = Math.random().toString(36).substring(2, 10);
-  const random = crypto.randomBytes(32).toString('hex');
+  const random = randomBytes(32).toString('hex');
   return `${prefix}_${random}`;
 }

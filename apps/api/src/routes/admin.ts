@@ -257,7 +257,7 @@ router.post('/tenants/:tenantId/members', async (req: AuthenticatedRequest, res:
 router.get('/tenants/:tenantId/api-keys', async (req: AuthenticatedRequest, res: Response) => {
   const keys = getAPIKeys(req.params.tenantId);
   // Don't return full keys, just metadata
-  const safeKeys = keys.map(k => ({
+  const safeKeys = keys.map((k: any) => ({
     id: k.id,
     name: k.name,
     keyPrefix: k.keyPrefix,

@@ -23,8 +23,8 @@ const PORT = process.env.API_PORT || 4000;
 app.use(express.json());
 
 // Request ID tracking
-app.use((req: Request, res: NextFunction, next: NextFunction) => {
-  req.headers['x-request-id'] = req.headers['x-request-id'] || uuidv4();
+app.use((req: Request, _res: Response, next: NextFunction) => {
+  (req.headers as any)['x-request-id'] = (req.headers as any)['x-request-id'] || uuidv4();
   next();
 });
 

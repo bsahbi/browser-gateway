@@ -5,7 +5,7 @@
  * Provides browser tools for AI agents.
  */
 
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { createRouter } from '@browser-gateway/router';
 import { createFirecrawlProvider } from '@browser-gateway/provider-firecrawl';
