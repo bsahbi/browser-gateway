@@ -190,7 +190,7 @@ function getProviderFromQuery(query: { provider?: string | string[] }): string |
   if (Array.isArray(query.provider)) {
     return query.provider[0];
   }
-  return query.provider;
+  return query.provider as string | undefined;
 }
 
 app.get('/v1/jobs/:jobId', async (req: Request, res: Response) => {
