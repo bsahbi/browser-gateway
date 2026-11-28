@@ -187,10 +187,10 @@ export class FirecrawlProvider implements BrowserProvider {
         ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` }),
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(this.config.timeoutMs),
+      signal: this.config.timeoutMs ? AbortSignal.timeout(this.config.timeoutMs) : undefined,
     });
 
-    const data: FirecrawlScrapeResponse = await response.json();
+    const data = await response.json() as FirecrawlScrapeResponse;
 
     if (!data.success) {
       throw {
@@ -240,10 +240,10 @@ export class FirecrawlProvider implements BrowserProvider {
         ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` }),
       },
       body: JSON.stringify(body),
-      signal: AbortSignal.timeout(this.config.timeoutMs),
+      signal: this.config.timeoutMs ? AbortSignal.timeout(this.config.timeoutMs) : undefined,
     });
 
-    const data: FirecrawlCrawlResponse = await response.json();
+    const data = await response.json() as FirecrawlCrawlResponse;
 
     if (!data.success) {
       throw {
@@ -284,11 +284,11 @@ export class FirecrawlProvider implements BrowserProvider {
         headers: {
           ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` }),
         },
-        signal: AbortSignal.timeout(this.config.timeoutMs),
+        signal: this.config.timeoutMs ? AbortSignal.timeout(this.config.timeoutMs) : undefined,
       }
     );
 
-    const data: FirecrawlJobStatus = await response.json();
+    const data = await response.json() as FirecrawlJobStatus;
 
     if (!data.success) {
       throw {
@@ -332,7 +332,7 @@ export class FirecrawlProvider implements BrowserProvider {
         }
       );
 
-      const data: FirecrawlJobStatus = await response.json();
+      const data = await response.json() as FirecrawlJobStatus;
 
       if (!data.success) {
         return null;

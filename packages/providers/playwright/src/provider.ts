@@ -45,7 +45,7 @@ export class PlaywrightProvider implements BrowserProvider {
 
   constructor(config: PlaywrightProviderConfig = {}) {
     this.config = {
-      browserUrl: config.browserUrl || undefined,
+      browserUrl: config.browserUrl,
       headless: config.headless ?? true,
       maxConcurrentPages: config.maxConcurrentPages || 5,
       timeoutMs: config.timeoutMs || 60000,
@@ -194,8 +194,6 @@ export class PlaywrightProvider implements BrowserProvider {
     const context = await this.browser!.newContext({
       viewport: { width: 1280, height: 720 },
       userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-      // Isolate storage per context
-      storageState: {},
     });
 
     return context;
@@ -212,7 +210,7 @@ export class PlaywrightProvider implements BrowserProvider {
       page = await context.newPage();
 
       // Set navigation timeout
-      const timeout = options?.waitFor || 30000;
+      const timeout = typeof options?.waitFor === 'number' ? options.waitFor : 30000;
 
       // Navigate to URL
       await page.goto(url, {
@@ -257,11 +255,11 @@ export class PlaywrightProvider implements BrowserProvider {
   private async extractMarkdown(page: Page): Promise<string> {
     return await page.evaluate(() => {
       // Remove scripts and styles
-      const scripts = document.querySelectorAll('script, style, noscript');
-      scripts.forEach(el => el.remove());
+      const scripts = (document as any).querySelectorAll('script, style, noscript');
+      scripts.forEach((el: any) => el.remove());
 
       // Get main content
-      const main = document.querySelector('main, [role="main"], .main, #main') || document.body;
+      const main = (document as any).querySelector('main, [role="main"], .main, #main') || (document as any).body;
 
       // Extract text and convert to simple markdown
       let text = main.textContent || '';
@@ -270,7 +268,7 @@ export class PlaywrightProvider implements BrowserProvider {
       text = text.replace(/\s+/g, ' ').trim();
       
       // Basic heading detection
-      const lines = text.split('\n').filter(l => l.trim());
+      const lines = text.split('\n').filter((l: string) => l.trim());
       return lines.join('\n\n');
     });
   }

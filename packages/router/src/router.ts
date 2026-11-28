@@ -134,7 +134,7 @@ export class BrowserRouter {
     let targetProvider: BrowserProvider;
 
     if (provider) {
-      targetProvider = this.providers.get(provider);
+      targetProvider = this.providers.get(provider)!;
       if (!targetProvider) {
         throw {
           code: ERROR_CODES.PROVIDER_UNAVAILABLE,
@@ -143,7 +143,7 @@ export class BrowserRouter {
       }
     } else {
       // Try default provider
-      targetProvider = this.providers.get(this.defaultProvider);
+      targetProvider = this.providers.get(this.defaultProvider)!;
       if (!targetProvider) {
         throw {
           code: ERROR_CODES.PROVIDER_UNAVAILABLE,
@@ -177,7 +177,7 @@ export class BrowserRouter {
     let targetProvider: BrowserProvider;
 
     if (provider) {
-      targetProvider = this.providers.get(provider);
+      targetProvider = this.providers.get(provider)!;
       if (!targetProvider) {
         throw {
           code: ERROR_CODES.PROVIDER_UNAVAILABLE,
@@ -185,7 +185,7 @@ export class BrowserRouter {
         } as GatewayError;
       }
     } else {
-      targetProvider = this.providers.get(this.defaultProvider);
+      targetProvider = this.providers.get(this.defaultProvider)!;
       if (!targetProvider) {
         throw {
           code: ERROR_CODES.PROVIDER_UNAVAILABLE,

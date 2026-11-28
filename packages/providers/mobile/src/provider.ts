@@ -98,10 +98,6 @@ export class MobileProvider implements BrowserProvider {
       },
       supportsAsync: false,
       supportsSessions: true,
-      metadata: {
-        supportedPlatforms: ['android', 'ios'],
-        supportedDevices: this.getDeviceList(),
-      },
     };
   }
 
@@ -270,7 +266,7 @@ export class MobileProvider implements BrowserProvider {
       page = await context.newPage();
 
       // Navigate
-      const timeout = options?.waitFor || 30000;
+      const timeout = typeof options?.waitFor === 'number' ? options.waitFor : 30000;
       await page.goto(url, {
         waitUntil: 'networkidle',
         timeout,
@@ -317,7 +313,9 @@ export class MobileProvider implements BrowserProvider {
   }
 
   private getDeviceDescriptor(platform: Platform, device: MobileDevice): any {
-    const deviceConfig = MOBILE_DEVICES[platform === 'android' ? 'Android Chrome' : 'iOS Safari'][device];
+    const platformName = platform === 'android' ? 'Android Chrome' : 'iOS Safari';
+    const platformDevices = MOBILE_DEVICES[platformName];
+    const deviceConfig = platformDevices[device as keyof typeof platformDevices];
     
     if (!deviceConfig) {
       // Fallback to default
@@ -368,11 +366,11 @@ export class MobileProvider implements BrowserProvider {
   private async extractMarkdown(page: Page): Promise<string> {
     return await page.evaluate(() => {
       // Remove scripts and styles
-      const scripts = document.querySelectorAll('script, style, noscript');
-      scripts.forEach(el => el.remove());
+      const scripts = (document as any).querySelectorAll('script, style, noscript');
+      scripts.forEach((el: any) => el.remove());
 
       // Get main content
-      const main = document.querySelector('main, [role="main"], .main, #main') || document.body;
+      const main = (document as any).querySelector('main, [role="main"], .main, #main') || (document as any).body;
 
       // Extract text
       let text = main.textContent || '';
