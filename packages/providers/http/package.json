@@ -1,0 +1,19 @@
+{
+  "name": "@browser-gateway/provider-http",
+  "version": "1.0.0",
+  "description": "HTTP fetch provider for Browser Gateway",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@browser-gateway/contracts": "1.0.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  }
+}

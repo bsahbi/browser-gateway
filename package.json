@@ -1,0 +1,30 @@
+{
+  "name": "browser-gateway",
+  "version": "1.0.0",
+  "description": "Workplane Browser Gateway - Browser acquisition and automation gateway",
+  "private": true,
+  "workspaces": [
+    "packages/contracts",
+    "packages/router",
+    "packages/providers/*",
+    "packages/control-plane",
+    "packages/session-manager",
+    "packages/capacity-manager",
+    "packages/distributed-system",
+    "apps/api",
+    "apps/mcp"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=@browser-gateway/contracts && npm run build --workspace=@browser-gateway/capacity-manager && npm run build --workspace=@browser-gateway/session-manager && npm run build --workspace=@browser-gateway/distributed-system && npm run build --workspace=@browser-gateway/control-plane && npm run build --workspace=@browser-gateway/router && npm run build --workspace=@browser-gateway/provider-firecrawl && npm run build --workspace=@browser-gateway/provider-http && npm run build --workspace=@browser-gateway/provider-playwright && npm run build --workspace=@browser-gateway/provider-mobile && npm run build --workspace=@browser-gateway/api && npm run build --workspace=@browser-gateway/mcp-server",
+    "test": "npm run test --workspaces --if-present",
+    "dev:api": "npm run dev --workspace=@browser-gateway/api",
+    "dev:mcp": "npm run dev --workspace=@browser-gateway/mcp",
+    "lint": "tsc --noEmit --project tsconfig.json"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
