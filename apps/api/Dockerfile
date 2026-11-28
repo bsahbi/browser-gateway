@@ -51,20 +51,18 @@ COPY packages/providers/http/package*.json ./packages/providers/http/
 COPY packages/providers/playwright/package*.json ./packages/providers/playwright/
 COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 
-# Copy workspace packages (required for module resolution)
-COPY packages/contracts ./packages/contracts
-COPY packages/router ./packages/router
-COPY packages/control-plane ./packages/control-plane
-COPY packages/session-manager ./packages/session-manager
-COPY packages/capacity-manager ./packages/capacity-manager
-COPY packages/distributed-system ./packages/distributed-system
-COPY packages/providers/firecrawl ./packages/providers/firecrawl
-COPY packages/providers/http ./packages/providers/http
-COPY packages/providers/playwright ./packages/providers/playwright
-COPY packages/providers/mobile ./packages/providers/mobile
-
-# Copy node_modules from builder (includes workspace symlinks and all dependencies)
-COPY --from=builder /app/node_modules ./node_modules
+# Copy workspace packages to node_modules/packages (matches relative symlinks from npm workspaces)
+RUN mkdir -p node_modules/packages && \
+    cp -r packages/contracts node_modules/packages/ && \
+    cp -r packages/router node_modules/packages/ && \
+    cp -r packages/control-plane node_modules/packages/ && \
+    cp -r packages/session-manager node_modules/packages/ && \
+    cp -r packages/capacity-manager node_modules/packages/ && \
+    cp -r packages/distributed-system node_modules/packages/ && \
+    cp -r packages/providers/firecrawl node_modules/packages/ && \
+    cp -r packages/providers/http node_modules/packages/ && \
+    cp -r packages/providers/playwright node_modules/packages/ && \
+    cp -r packages/providers/mobile node_modules/packages/
 
 # Copy built artifacts
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
