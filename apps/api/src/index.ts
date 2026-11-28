@@ -191,9 +191,12 @@ app.get('/v1/jobs/:jobId', async (req: Request, res: Response) => {
 
   try {
     const { jobId } = req.params;
-    // Cast query provider to expected type (string | undefined)
-    const provider = (req.query.provider as string | undefined) ?? 
-                     (Array.isArray(req.query.provider) ? req.query.provider[0] as string | undefined : undefined);
+    // Extract provider from query params
+    // req.query.provider can be: string | string[] | ParsedQs | ParsedQs[] | undefined
+    // We only care if it's a string or first element of string[]
+    const provider = Array.isArray(req.query.provider)
+      ? req.query.provider[0]
+      : req.query.provider;
 
     const status = await router.getJob(jobId, provider);
     res.json(successResponse(status, requestId, receivedAt));
@@ -214,9 +217,12 @@ app.post('/v1/jobs/:jobId/cancel', async (req: Request, res: Response) => {
 
   try {
     const { jobId } = req.params;
-    // Cast query provider to expected type (string | undefined)
-    const provider = (req.query.provider as string | undefined) ?? 
-                     (Array.isArray(req.query.provider) ? req.query.provider[0] as string | undefined : undefined);
+    // Extract provider from query params
+    // req.query.provider can be: string | string[] | ParsedQs | ParsedQs[] | undefined
+    // We only care if it's a string or first element of string[]
+    const provider = Array.isArray(req.query.provider)
+      ? req.query.provider[0]
+      : req.query.provider;
 
     const result = await router.cancel(jobId, provider);
     res.json(successResponse(result, requestId, receivedAt));
