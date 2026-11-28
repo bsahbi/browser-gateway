@@ -52,23 +52,14 @@ COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 RUN npm install && npm cache clean --force
 
 # Copy all packages (required for workspace resolution)
-COPY packages/contracts ./packages/contracts
 COPY packages/contracts/dist ./packages/contracts/dist
-COPY packages/router ./packages/router
 COPY packages/router/dist ./packages/router/dist
-COPY packages/capacity-manager ./packages/capacity-manager
 COPY packages/capacity-manager/dist ./packages/capacity-manager/dist
-COPY packages/session-manager ./packages/session-manager
 COPY packages/session-manager/dist ./packages/session-manager/dist
-COPY packages/control-plane ./packages/control-plane
 COPY packages/control-plane/dist ./packages/control-plane/dist
-COPY packages/distributed-system ./packages/distributed-system
 COPY packages/distributed-system/dist ./packages/distributed-system/dist
-COPY packages/providers/firecrawl ./packages/providers/firecrawl
 COPY packages/providers/firecrawl/dist ./packages/providers/firecrawl/dist
-COPY packages/providers/http ./packages/providers/http
 COPY packages/providers/http/dist ./packages/providers/http/dist
-COPY packages/providers/playwright ./packages/providers/playwright
 COPY packages/providers/playwright/dist ./packages/providers/playwright/dist
 
 # Copy built artifacts
