@@ -51,6 +51,9 @@ COPY packages/providers/http/package*.json ./packages/providers/http/
 COPY packages/providers/playwright/package*.json ./packages/providers/playwright/
 COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 
+# Copy node_modules from builder (includes all dependencies and workspace symlinks)
+COPY --from=builder /app/node_modules ./node_modules
+
 # Copy workspace packages to node_modules/packages (matches relative symlinks from npm workspaces)
 RUN mkdir -p node_modules/packages && \
     cp -r packages/contracts node_modules/packages/ && \
