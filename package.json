@@ -15,7 +15,7 @@
     "apps/mcp"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "tsc --build --verbose",
     "test": "npm run test --workspaces --if-present",
     "dev:api": "npm run dev --workspace=@browser-gateway/api",
     "dev:mcp": "npm run dev --workspace=@browser-gateway/mcp",

@@ -17,5 +17,18 @@
       "@browser-gateway/provider-firecrawl": ["packages/providers/firecrawl/src/index.ts"]
     }
   },
+  "references": [
+    {"path": "./packages/contracts"},
+    {"path": "./packages/capacity-manager"},
+    {"path": "./packages/session-manager"},
+    {"path": "./packages/control-plane"},
+    {"path": "./packages/router"},
+    {"path": "./packages/distributed-system"},
+    {"path": "./packages/providers/firecrawl"},
+    {"path": "./packages/providers/playwright"},
+    {"path": "./packages/providers/mobile"},
+    {"path": "./apps/api"},
+    {"path": "./apps/mcp"}
+  ],
   "exclude": ["node_modules", "**/dist"]
 }
