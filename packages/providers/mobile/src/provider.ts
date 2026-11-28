@@ -323,11 +323,11 @@ export class MobileProvider implements BrowserProvider {
     }
 
     return {
-      viewport: deviceConfig.viewport,
-      userAgent: deviceConfig.userAgent,
-      deviceScaleFactor: deviceConfig.deviceScaleFactor || 1,
-      isMobile: deviceConfig.isMobile || true,
-      hasTouch: deviceConfig.hasTouch || true,
+      viewport: (deviceConfig as any).viewport,
+      userAgent: (deviceConfig as any).userAgent,
+      deviceScaleFactor: (deviceConfig as any).deviceScaleFactor || 1,
+      isMobile: (deviceConfig as any).isMobile || true,
+      hasTouch: (deviceConfig as any).hasTouch || true,
     };
   }
 
@@ -366,11 +366,11 @@ export class MobileProvider implements BrowserProvider {
   private async extractMarkdown(page: Page): Promise<string> {
     return await page.evaluate(() => {
       // Remove scripts and styles
-      const scripts = (document as any).querySelectorAll('script, style, noscript');
-      scripts.forEach((el: any) => el.remove());
+      const scripts = document.querySelectorAll('script, style, noscript');
+      scripts.forEach((el: Element) => el.remove());
 
       // Get main content
-      const main = (document as any).querySelector('main, [role="main"], .main, #main') || (document as any).body;
+      const main = document.querySelector('main, [role="main"], .main, #main') as HTMLElement || document.body;
 
       // Extract text
       let text = main.textContent || '';
