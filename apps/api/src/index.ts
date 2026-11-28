@@ -193,7 +193,7 @@ app.get('/v1/jobs/:jobId', async (req: Request, res: Response) => {
     const { jobId } = req.params;
     const provider = typeof req.query.provider === 'string' ? req.query.provider : undefined;
 
-    const status = await router.getJob(jobId, provider);
+    const status = await router.getJob(jobId, provider as string | undefined);
     res.json(successResponse(status, requestId, receivedAt));
   } catch (error) {
     const gatewayError = error as GatewayError;
@@ -214,7 +214,7 @@ app.post('/v1/jobs/:jobId/cancel', async (req: Request, res: Response) => {
     const { jobId } = req.params;
     const provider = typeof req.query.provider === 'string' ? req.query.provider : undefined;
 
-    const result = await router.cancel(jobId, provider);
+    const result = await router.cancel(jobId, provider as string | undefined);
     res.json(successResponse(result, requestId, receivedAt));
   } catch (error) {
     const gatewayError = error as GatewayError;
