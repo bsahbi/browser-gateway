@@ -1,8 +1,9 @@
-version: '3.8'
-
 services:
   # API Server
   api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
     image: browser-gateway-api:latest
     ports:
       - "4000:4000"
@@ -20,6 +21,9 @@ services:
 
   # MCP Server
   mcp:
+    build:
+      context: .
+      dockerfile: apps/mcp/Dockerfile
     image: browser-gateway-mcp:latest
     ports:
       - "3001:3001"
