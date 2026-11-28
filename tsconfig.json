@@ -14,7 +14,10 @@
     "paths": {
       "@browser-gateway/contracts": ["packages/contracts/src/index.ts"],
       "@browser-gateway/router": ["packages/router/src/index.ts"],
-      "@browser-gateway/provider-firecrawl": ["packages/providers/firecrawl/src/index.ts"]
+      "@browser-gateway/provider-firecrawl": ["packages/providers/firecrawl/src/index.ts"],
+      "@browser-gateway/provider-http": ["packages/providers/http/src/index.ts"],
+      "@browser-gateway/provider-playwright": ["packages/providers/playwright/src/index.ts"],
+      "@browser-gateway/provider-mobile": ["packages/providers/mobile/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "**/dist"]
