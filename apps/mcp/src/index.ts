@@ -7,7 +7,8 @@
 
 import express, { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { createRouter, BrowserProvider } from '@browser-gateway/router';
+import { createRouter } from '@browser-gateway/router';
+import { BrowserProvider } from '@browser-gateway/contracts';
 import { createFirecrawlProvider } from '@browser-gateway/provider-firecrawl';
 import { createHttpProvider } from '@browser-gateway/provider-http';
 import { createPlaywrightProvider } from '@browser-gateway/provider-playwright';

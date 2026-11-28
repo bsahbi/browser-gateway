@@ -5,6 +5,7 @@
  * Supports isolated browser contexts for tenant isolation.
  */
 
+/// <reference lib="dom" />
 import {
   BrowserProvider,
   ProviderDescriptor,
@@ -14,7 +15,6 @@ import {
   ERROR_CODES,
   GatewayError,
 } from '@browser-gateway/contracts';
-/// <reference lib="dom" />
 import { chromium, Browser, Page, BrowserContext } from 'playwright';
 
 export interface PlaywrightProviderConfig {
