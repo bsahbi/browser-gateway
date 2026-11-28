@@ -188,7 +188,7 @@ app.post('/v1/crawls', async (req: Request, res: Response) => {
 // Helper function to extract provider from query params
 function getProviderFromQuery(query: { provider?: string | string[] }): string | undefined {
   if (Array.isArray(query.provider)) {
-    return query.provider[0];
+    return query.provider[0] as string | undefined;
   }
   return query.provider as string | undefined;
 }
