@@ -54,18 +54,29 @@ COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 # Copy node_modules from builder (includes all dependencies and workspace symlinks)
 COPY --from=builder /app/node_modules ./node_modules
 
-# Copy workspace packages to node_modules/packages (matches relative symlinks from npm workspaces)
-RUN mkdir -p node_modules/packages && \
-    cp -r packages/contracts node_modules/packages/ && \
-    cp -r packages/router node_modules/packages/ && \
-    cp -r packages/control-plane node_modules/packages/ && \
-    cp -r packages/session-manager node_modules/packages/ && \
-    cp -r packages/capacity-manager node_modules/packages/ && \
-    cp -r packages/distributed-system node_modules/packages/ && \
-    cp -r packages/providers/firecrawl node_modules/packages/ && \
-    cp -r packages/providers/http node_modules/packages/ && \
-    cp -r packages/providers/playwright node_modules/packages/ && \
-    cp -r packages/providers/mobile node_modules/packages/
+# Copy workspace packages dist folders from builder (matches relative symlinks from npm workspaces)
+COPY --from=builder /app/packages/contracts/dist ./node_modules/packages/contracts/dist
+COPY --from=builder /app/packages/router/dist ./node_modules/packages/router/dist
+COPY --from=builder /app/packages/control-plane/dist ./node_modules/packages/control-plane/dist
+COPY --from=builder /app/packages/session-manager/dist ./node_modules/packages/session-manager/dist
+COPY --from=builder /app/packages/capacity-manager/dist ./node_modules/packages/capacity-manager/dist
+COPY --from=builder /app/packages/distributed-system/dist ./node_modules/packages/distributed-system/dist
+COPY --from=builder /app/packages/providers/firecrawl/dist ./node_modules/packages/providers/firecrawl/dist
+COPY --from=builder /app/packages/providers/http/dist ./node_modules/packages/providers/http/dist
+COPY --from=builder /app/packages/providers/playwright/dist ./node_modules/packages/providers/playwright/dist
+COPY --from=builder /app/packages/providers/mobile/dist ./node_modules/packages/providers/mobile/dist
+
+# Copy package.json files for workspace packages
+COPY packages/contracts/package*.json ./node_modules/packages/contracts/
+COPY packages/router/package*.json ./node_modules/packages/router/
+COPY packages/control-plane/package*.json ./node_modules/packages/control-plane/
+COPY packages/session-manager/package*.json ./node_modules/packages/session-manager/
+COPY packages/capacity-manager/package*.json ./node_modules/packages/capacity-manager/
+COPY packages/distributed-system/package*.json ./node_modules/packages/distributed-system/
+COPY packages/providers/firecrawl/package*.json ./node_modules/packages/providers/firecrawl/
+COPY packages/providers/http/package*.json ./node_modules/packages/providers/http/
+COPY packages/providers/playwright/package*.json ./node_modules/packages/providers/playwright/
+COPY packages/providers/mobile/package*.json ./node_modules/packages/providers/mobile/
 
 # Copy built artifacts
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
