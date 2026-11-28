@@ -10,11 +10,10 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=4000
-      - FIRECRAWL_API_URL=http://firecrawl:3002
+      - FIRECRAWL_API_URL=http://localhost:3002
       - REDIS_URL=redis://redis:6379
     depends_on:
       - redis
-      - firecrawl
     networks:
       - gateway-network
     restart: unless-stopped
@@ -30,12 +29,11 @@ services:
     environment:
       - NODE_ENV=production
       - MCP_PORT=3001
-      - FIRECRAWL_API_URL=http://firecrawl:3002
+      - FIRECRAWL_API_URL=http://localhost:3002
       - REDIS_URL=redis://redis:6379
       - MCP_ALLOWED_HOSTS=browser.example.com
     depends_on:
       - redis
-      - firecrawl
     networks:
       - gateway-network
     restart: unless-stopped
@@ -48,31 +46,6 @@ services:
     command: redis-server --appendonly yes
     volumes:
       - redis-data:/data
-    networks:
-      - gateway-network
-    restart: unless-stopped
-
-  # Firecrawl (browser provider)
-  firecrawl:
-    image: firecrawl/firecrawl:latest
-    ports:
-      - "3002:3002"
-    environment:
-      - PORT=3002
-      - REDIS_URL=redis://redis:6379
-    depends_on:
-      - redis
-    networks:
-      - gateway-network
-    restart: unless-stopped
-
-  # Playwright (browser automation)
-  playwright:
-    image: mcr.microsoft.com/playwright:v1.50.0-noble
-    environment:
-      - PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
-    volumes:
-      - playwright-data:/ms-playwright
     networks:
       - gateway-network
     restart: unless-stopped
