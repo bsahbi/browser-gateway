@@ -46,13 +46,13 @@ COPY packages/distributed-system/package*.json ./packages/distributed-system/
 COPY packages/providers/firecrawl/package*.json ./packages/providers/firecrawl/
 COPY packages/providers/http/package*.json ./packages/providers/http/
 COPY packages/providers/playwright/package*.json ./packages/providers/playwright/
+COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 
 # Install production dependencies only
 RUN npm install && npm cache clean --force
 
 # Copy all packages (required for workspace resolution)
 COPY packages/contracts ./packages/contracts
-COPY packages/contracts/dist ./packages/contracts/dist
 COPY packages/router ./packages/router
 COPY packages/router/dist ./packages/router/dist
 COPY packages/capacity-manager ./packages/capacity-manager
