@@ -9,6 +9,10 @@ COPY tsconfig.json ./
 COPY apps/mcp/package*.json ./apps/mcp/
 COPY packages/contracts/package*.json ./packages/contracts/
 COPY packages/router/package*.json ./packages/router/
+COPY packages/capacity-manager/package*.json ./packages/capacity-manager/
+COPY packages/session-manager/package*.json ./packages/session-manager/
+COPY packages/control-plane/package*.json ./packages/control-plane/
+COPY packages/distributed-system/package*.json ./packages/distributed-system/
 COPY packages/providers/firecrawl/package*.json ./packages/providers/firecrawl/
 COPY packages/providers/http/package*.json ./packages/providers/http/
 COPY packages/providers/playwright/package*.json ./packages/providers/playwright/
@@ -37,13 +41,19 @@ COPY apps/mcp/package*.json ./apps/mcp/
 # Install production dependencies only
 RUN npm ci --only=production && npm cache clean --force
 
+# Copy all packages (required for workspace resolution)
+COPY packages/contracts/dist ./packages/contracts/dist
+COPY packages/router/dist ./packages/router/dist
+COPY packages/providers/firecrawl/dist ./packages/providers/firecrawl/dist
+COPY packages/providers/http/dist ./packages/providers/http/dist
+COPY packages/providers/playwright/dist ./packages/providers/playwright/dist
+COPY packages/capacity-manager/dist ./packages/capacity-manager/dist
+COPY packages/session-manager/dist ./packages/session-manager/dist
+COPY packages/control-plane/dist ./packages/control-plane/dist
+COPY packages/distributed-system/dist ./packages/distributed-system/dist
+
 # Copy built artifacts
 COPY --from=builder /app/apps/mcp/dist ./apps/mcp/dist
-COPY --from=builder /app/packages/contracts/dist ./packages/contracts/dist
-COPY --from=builder /app/packages/router/dist ./packages/router/dist
-COPY --from=builder /app/packages/providers/firecrawl/dist ./packages/providers/firecrawl/dist
-COPY --from=builder /app/packages/providers/http/dist ./packages/providers/http/dist
-COPY --from=builder /app/packages/providers/playwright/dist ./packages/providers/playwright/dist
 
 ENV NODE_ENV=production
 ENV MCP_PORT=3001
