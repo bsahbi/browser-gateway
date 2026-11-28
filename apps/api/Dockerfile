@@ -52,28 +52,18 @@ COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 RUN npm install && npm cache clean --force
 
 # Copy all packages (required for workspace resolution)
-COPY packages/contracts/package*.json ./packages/contracts/
-COPY packages/contracts/dist ./packages/contracts/dist
-COPY packages/router/package*.json ./packages/router/
-COPY packages/router/dist ./packages/router/dist
-COPY packages/control-plane/package*.json ./packages/control-plane/
-COPY packages/control-plane/dist ./packages/control-plane/dist
-COPY packages/session-manager/package*.json ./packages/session-manager/
-COPY packages/session-manager/dist ./packages/session-manager/dist
-COPY packages/capacity-manager/package*.json ./packages/capacity-manager/
-COPY packages/capacity-manager/dist ./packages/capacity-manager/dist
-COPY packages/distributed-system/package*.json ./packages/distributed-system/
-COPY packages/distributed-system/dist ./packages/distributed-system/dist
-COPY packages/providers/firecrawl/package*.json ./packages/providers/firecrawl/
-COPY packages/providers/firecrawl/dist ./packages/providers/firecrawl/dist
-COPY packages/providers/http/package*.json ./packages/providers/http/
-COPY packages/providers/http/dist ./packages/providers/http/dist
-COPY packages/providers/playwright/package*.json ./packages/providers/playwright/
-COPY packages/providers/playwright/dist ./packages/providers/playwright/dist
-COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
-COPY packages/providers/mobile/dist ./packages/providers/mobile/dist
+COPY packages/contracts ./packages/contracts
+COPY packages/router ./packages/router
+COPY packages/control-plane ./packages/control-plane
+COPY packages/session-manager ./packages/session-manager
+COPY packages/capacity-manager ./packages/capacity-manager
+COPY packages/distributed-system ./packages/distributed-system
+COPY packages/providers/firecrawl ./packages/providers/firecrawl
+COPY packages/providers/http ./packages/providers/http
+COPY packages/providers/playwright ./packages/providers/playwright
+COPY packages/providers/mobile ./packages/providers/mobile
 
-# Manually create workspace symlinks (after dist folders are copied)
+# Manually create workspace symlinks (after packages are copied)
 RUN mkdir -p node_modules/@browser-gateway && \
     ln -s /app/packages/contracts node_modules/@browser-gateway/contracts && \
     ln -s /app/packages/router node_modules/@browser-gateway/router && \
