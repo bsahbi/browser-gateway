@@ -48,7 +48,7 @@ COPY packages/providers/http/package*.json ./packages/providers/http/
 COPY packages/providers/playwright/package*.json ./packages/providers/playwright/
 
 # Install production dependencies only
-RUN npm ci --only=production && npm cache clean --force
+RUN npm install && npm cache clean --force
 
 # Copy all packages (required for workspace resolution)
 COPY packages/contracts ./packages/contracts
