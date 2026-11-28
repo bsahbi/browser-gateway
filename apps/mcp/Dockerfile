@@ -51,7 +51,18 @@ COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 # Install production dependencies only
 RUN npm install && npm cache clean --force
 
-# Manually create workspace symlinks
+# Copy all packages (required for workspace resolution)
+COPY packages/contracts/dist ./packages/contracts/dist
+COPY packages/router/dist ./packages/router/dist
+COPY packages/capacity-manager/dist ./packages/capacity-manager/dist
+COPY packages/session-manager/dist ./packages/session-manager/dist
+COPY packages/control-plane/dist ./packages/control-plane/dist
+COPY packages/distributed-system/dist ./packages/distributed-system/dist
+COPY packages/providers/firecrawl/dist ./packages/providers/firecrawl/dist
+COPY packages/providers/http/dist ./packages/providers/http/dist
+COPY packages/providers/playwright/dist ./packages/providers/playwright/dist
+
+# Manually create workspace symlinks (after dist folders are copied)
 RUN mkdir -p node_modules/@browser-gateway && \
     ln -s /app/packages/contracts node_modules/@browser-gateway/contracts && \
     ln -s /app/packages/router node_modules/@browser-gateway/router && \
@@ -63,17 +74,6 @@ RUN mkdir -p node_modules/@browser-gateway && \
     ln -s /app/packages/providers/http node_modules/@browser-gateway/http && \
     ln -s /app/packages/providers/playwright node_modules/@browser-gateway/playwright && \
     ln -s /app/packages/providers/mobile node_modules/@browser-gateway/mobile
-
-# Copy all packages (required for workspace resolution)
-COPY packages/contracts/dist ./packages/contracts/dist
-COPY packages/router/dist ./packages/router/dist
-COPY packages/capacity-manager/dist ./packages/capacity-manager/dist
-COPY packages/session-manager/dist ./packages/session-manager/dist
-COPY packages/control-plane/dist ./packages/control-plane/dist
-COPY packages/distributed-system/dist ./packages/distributed-system/dist
-COPY packages/providers/firecrawl/dist ./packages/providers/firecrawl/dist
-COPY packages/providers/http/dist ./packages/providers/http/dist
-COPY packages/providers/playwright/dist ./packages/providers/playwright/dist
 
 # Copy built artifacts
 COPY --from=builder /app/apps/mcp/dist ./apps/mcp/dist
