@@ -198,10 +198,8 @@ app.get('/v1/jobs/:jobId', async (req: Request, res: Response) => {
       ? req.query.provider[0]
       : req.query.provider;
 
-    // Force type assertion - router expects string | undefined
-    const providerStr = provider as unknown as string | undefined;
-
-    const status = await router.getJob(jobId, providerStr);
+    // @ts-expect-error - router expects string | undefined, but TypeScript infers string | string[]
+    const status = await router.getJob(jobId, provider);
     res.json(successResponse(status, requestId, receivedAt));
   } catch (error) {
     const gatewayError = error as GatewayError;
@@ -227,10 +225,8 @@ app.post('/v1/jobs/:jobId/cancel', async (req: Request, res: Response) => {
       ? req.query.provider[0]
       : req.query.provider;
 
-    // Force type assertion - router expects string | undefined
-    const providerStr = provider as unknown as string | undefined;
-
-    const result = await router.cancel(jobId, providerStr);
+    // @ts-expect-error - router expects string | undefined, but TypeScript infers string | string[]
+    const result = await router.cancel(jobId, provider);
     res.json(successResponse(result, requestId, receivedAt));
   } catch (error) {
     const gatewayError = error as GatewayError;
