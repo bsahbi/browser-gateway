@@ -93,7 +93,7 @@ router.post('/sessions', (req: AuthenticatedRequest, res: Response) => {
 
 // GET /sessions - List sessions
 router.get('/sessions', (req: AuthenticatedRequest, res: Response) => {
-  const status = req.query.status as SessionStatus;
+  const status = typeof req.query.status === 'string' ? req.query.status as SessionStatus : undefined;
   const sessions = listSessions(req.tenantId!, status);
   res.json(sessions);
 });
@@ -147,7 +147,8 @@ router.post('/sessions/:id/extend', (req: AuthenticatedRequest, res: Response) =
 
 // GET /sessions/:id/actions - Get session actions
 router.get('/sessions/:id/actions', (req: AuthenticatedRequest, res: Response) => {
-  const limit = parseInt(req.query.limit as string) || 50;
+  const limitParam = req.query.limit;
+  const limit = parseInt(typeof limitParam === 'string' ? limitParam : '50') || 50;
   const actions = getActions(req.params.id, limit);
   res.json(actions);
 });

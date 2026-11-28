@@ -376,8 +376,9 @@ router.get('/tenants/:tenantId/plan', async (req: AuthenticatedRequest, res: Res
 
 // GET /admin/tenants/:tenantId/usage - Get usage report
 router.get('/tenants/:tenantId/usage', async (req: AuthenticatedRequest, res: Response) => {
-  const startDate = req.query.startDate
-    ? new Date(req.query.startDate as string)
+  const startDateParam = req.query.startDate;
+  const startDate = typeof startDateParam === 'string' 
+    ? new Date(startDateParam)
     : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // Last 30 days
 
   const totals = calculateUsageTotals(req.params.tenantId, startDate);
@@ -447,7 +448,8 @@ router.patch('/providers/:id', async (req: AuthenticatedRequest, res: Response) 
 
 // GET /admin/tenants/:tenantId/audit - Get audit log
 router.get('/tenants/:tenantId/audit', async (req: AuthenticatedRequest, res: Response) => {
-  const limit = Math.min(parseInt(req.query.limit as string) || 100, 500);
+  const limitParam = req.query.limit;
+  const limit = Math.min(parseInt(typeof limitParam === 'string' ? limitParam : '100') || 100, 500);
   const events = getAuditEvents(req.params.tenantId, limit);
   res.json(events);
 });
