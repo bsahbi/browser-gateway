@@ -51,9 +51,6 @@ COPY packages/providers/http/package*.json ./packages/providers/http/
 COPY packages/providers/playwright/package*.json ./packages/providers/playwright/
 COPY packages/providers/mobile/package*.json ./packages/providers/mobile/
 
-# Install production dependencies
-RUN npm install --production && npm cache clean --force
-
 # Copy workspace packages (required for module resolution)
 COPY packages/contracts ./packages/contracts
 COPY packages/router ./packages/router
@@ -66,7 +63,7 @@ COPY packages/providers/http ./packages/providers/http
 COPY packages/providers/playwright ./packages/providers/playwright
 COPY packages/providers/mobile ./packages/providers/mobile
 
-# Copy node_modules from builder (includes workspace symlinks)
+# Copy node_modules from builder (includes workspace symlinks and all dependencies)
 COPY --from=builder /app/node_modules ./node_modules
 
 # Copy built artifacts
